@@ -16,6 +16,23 @@ export type InvoiceType = "rent" | "electricity" | "mixed" | "other";
 
 export type PaymentMethod = "cash" | "bank_transfer" | "promptpay" | "other";
 
+export type PaymentProvider = "manual" | "stripe";
+
+export type PaymentSessionStatus =
+  | "created"
+  | "open"
+  | "paid"
+  | "expired"
+  | "canceled"
+  | "failed";
+
+export type RefundStatus =
+  | "none"
+  | "requested"
+  | "partial"
+  | "refunded"
+  | "failed";
+
 export type Organization = {
   id: string;
   name: string;
@@ -117,8 +134,60 @@ export type Payment = {
   paidAt: string;
   amount: number;
   method: PaymentMethod;
+  provider: PaymentProvider;
+  providerSessionId: string;
+  providerPaymentId: string;
+  webhookEventId: string;
+  refundStatus: RefundStatus;
   reference: string;
   notes?: string;
+};
+
+export type TenantPortalLink = {
+  id: string;
+  tenantId: string;
+  label: string;
+  active: boolean;
+  expiresAt?: string;
+  lastViewedAt?: string;
+  revokedAt?: string;
+  createdAt: string;
+};
+
+export type PaymentSession = {
+  id: string;
+  invoiceId: string;
+  tenantId: string;
+  provider: PaymentProvider;
+  status: PaymentSessionStatus;
+  amount: number;
+  currency: string;
+  providerSessionId: string;
+  providerPaymentId: string;
+  checkoutUrl: string;
+  expiresAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PaymentEvent = {
+  id: string;
+  provider: PaymentProvider;
+  eventId: string;
+  eventType: string;
+  providerSessionId: string;
+  providerPaymentId: string;
+  receivedAt: string;
+};
+
+export type InvoiceAuditLog = {
+  id: string;
+  invoiceId: string;
+  actorUserId?: string;
+  action: string;
+  reason: string;
+  metadata: string;
+  createdAt: string;
 };
 
 export type DashboardData = {
@@ -135,7 +204,14 @@ export type DashboardData = {
   meterReadings: MeterReading[];
   invoices: Invoice[];
   payments: Payment[];
+  portalLinks: TenantPortalLink[];
+  paymentSessions: PaymentSession[];
+  paymentEvents: PaymentEvent[];
+  invoiceAuditLogs: InvoiceAuditLog[];
   databaseConfigured: boolean;
   cloudinaryConfigured: boolean;
   clerkConfigured: boolean;
+  stripeConfigured: boolean;
+  resendConfigured: boolean;
+  appUrl: string;
 };

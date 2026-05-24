@@ -5,6 +5,7 @@
 import {
   AlertCircle,
   Banknote,
+  BarChart3,
   Bolt,
   Building2,
   CalendarDays,
@@ -15,6 +16,8 @@ import {
   Gauge,
   ImageUp,
   Layers,
+  Link2,
+  Mail,
   Plus,
   Printer,
   ReceiptText,
@@ -34,6 +37,15 @@ import {
   recordMeterReadingAction,
   recordPaymentAction,
   updateBillingCycleStatusAction,
+  createTenantPortalLinkAction,
+  revokeTenantPortalLinkAction,
+  sendInvoiceEmailAction,
+  updateOrganizationAction,
+  updateTenantAction,
+  updateUnitAction,
+  updateUserRoleAction,
+  voidInvoiceAction,
+  voidPaymentAction,
 } from "@/app/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -611,6 +623,11 @@ export function BillingWorkspace({
       paidAt: field(form, "paidAt") || today(),
       amount,
       method: (field(form, "method") as Payment["method"]) || "bank_transfer",
+      provider: "manual",
+      providerSessionId: "",
+      providerPaymentId: "",
+      webhookEventId: "",
+      refundStatus: "none",
       reference: field(form, "reference"),
       notes: field(form, "notes"),
     };
@@ -862,6 +879,159 @@ export function BillingWorkspace({
     );
   }
 
+  async function handleTenantUpdate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+
+    if (!data.databaseConfigured) {
+      setData((current) => ({
+        ...current,
+        tenants: current.tenants.map((tenant) =>
+          tenant.id === field(form, "tenantId")
+            ? {
+                ...tenant,
+                code: field(form, "code"),
+                name: field(form, "name"),
+                contactName: field(form, "contactName"),
+                phone: field(form, "phone"),
+                email: field(form, "email"),
+                taxId: field(form, "taxId"),
+                billingAddress: field(form, "billingAddress"),
+                vatEnabled: field(form, "vatEnabled") === "yes",
+              }
+            : tenant,
+        ),
+      }));
+      setActionMessage("แก้ไขผู้เช่าแล้ว");
+      return;
+    }
+
+    const result = await updateTenantAction(
+      { ok: false, message: "" },
+      new FormData(form),
+    );
+    setActionMessage(result.message);
+    if (result.ok) router.refresh();
+  }
+
+  async function handleUnitUpdate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+
+    if (!data.databaseConfigured) {
+      setActionMessage("โหมด demo ยังไม่บันทึกพื้นที่เช่า");
+      return;
+    }
+
+    const result = await updateUnitAction(
+      { ok: false, message: "" },
+      new FormData(form),
+    );
+    setActionMessage(result.message);
+    if (result.ok) router.refresh();
+  }
+
+  async function handleOrganizationSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+
+    if (!data.databaseConfigured) {
+      setData((current) => ({
+        ...current,
+        organization: {
+          ...current.organization,
+          name: field(form, "name"),
+          taxId: field(form, "taxId"),
+          address: field(form, "address"),
+          phone: field(form, "phone"),
+          email: field(form, "email"),
+          vatRate: amountField(form, "vatRate"),
+          vatEnabledDefault: field(form, "vatEnabledDefault") === "yes",
+        },
+      }));
+      setActionMessage("แก้ไขข้อมูลบริษัทแล้ว");
+      return;
+    }
+
+    const result = await updateOrganizationAction(
+      { ok: false, message: "" },
+      new FormData(form),
+    );
+    setActionMessage(result.message);
+    if (result.ok) router.refresh();
+  }
+
+  async function handleRoleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const result = await updateUserRoleAction(
+      { ok: false, message: "" },
+      new FormData(event.currentTarget),
+    );
+    setActionMessage(result.message);
+    if (result.ok) router.refresh();
+  }
+
+  async function handlePortalLink(tenantId: string) {
+    const formData = new FormData();
+    formData.set("tenantId", tenantId);
+    const result = await createTenantPortalLinkAction(
+      { ok: false, message: "" },
+      formData,
+    );
+    setActionMessage(result.message);
+    if (result.ok) router.refresh();
+  }
+
+  async function handleRevokePortalLink(linkId: string) {
+    const formData = new FormData();
+    formData.set("linkId", linkId);
+    const result = await revokeTenantPortalLinkAction(
+      { ok: false, message: "" },
+      formData,
+    );
+    setActionMessage(result.message);
+    if (result.ok) router.refresh();
+  }
+
+  async function handleSendInvoice(invoiceId: string) {
+    const formData = new FormData();
+    formData.set("invoiceId", invoiceId);
+    const result = await sendInvoiceEmailAction(
+      { ok: false, message: "" },
+      formData,
+    );
+    setActionMessage(result.message);
+    if (result.ok) router.refresh();
+  }
+
+  async function handleVoidInvoice(invoiceId: string) {
+    const reason = window.prompt("เหตุผลยกเลิกใบแจ้งหนี้");
+    if (!reason) return;
+    const formData = new FormData();
+    formData.set("invoiceId", invoiceId);
+    formData.set("reason", reason);
+    const result = await voidInvoiceAction(
+      { ok: false, message: "" },
+      formData,
+    );
+    setActionMessage(result.message);
+    if (result.ok) router.refresh();
+  }
+
+  async function handleVoidPayment(paymentId: string) {
+    const reason = window.prompt("เหตุผลยกเลิกรายการรับเงิน");
+    if (!reason) return;
+    const formData = new FormData();
+    formData.set("paymentId", paymentId);
+    formData.set("reason", reason);
+    const result = await voidPaymentAction(
+      { ok: false, message: "" },
+      formData,
+    );
+    setActionMessage(result.message);
+    if (result.ok) router.refresh();
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto grid min-h-screen w-full max-w-[1480px] grid-cols-1 md:grid-cols-[248px_minmax(0,1fr)]">
@@ -888,6 +1058,7 @@ export function BillingWorkspace({
               ["มิเตอร์", Gauge],
               ["ใบแจ้งหนี้", ReceiptText],
               ["ชำระเงิน", Banknote],
+              ["รายงาน", BarChart3],
               ["ตั้งค่า", Settings],
             ].map(([label, Icon]) => (
               <a
@@ -1041,7 +1212,7 @@ export function BillingWorkspace({
           ) : null}
 
           <Tabs defaultValue="overview" className="mt-5">
-            <TabsList className="!grid !h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-7">
+            <TabsList className="!grid !h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-8">
               <TabsTrigger className={tabTriggerClass} value="overview">
                 ภาพรวม
               </TabsTrigger>
@@ -1059,6 +1230,9 @@ export function BillingWorkspace({
               </TabsTrigger>
               <TabsTrigger className={tabTriggerClass} value="payments">
                 ชำระเงิน
+              </TabsTrigger>
+              <TabsTrigger className={tabTriggerClass} value="reports">
+                รายงาน
               </TabsTrigger>
               <TabsTrigger className={tabTriggerClass} value="settings">
                 ตั้งค่า
@@ -1101,7 +1275,13 @@ export function BillingWorkspace({
                   <TenantDialog onSubmit={handleTenantSubmit} />
                 </Dialog>
               </section>
-              <TenantList data={data} tenants={filteredTenants} />
+              <TenantList
+                data={data}
+                tenants={filteredTenants}
+                onCreatePortalLink={handlePortalLink}
+                onRevokePortalLink={handleRevokePortalLink}
+                onUpdateTenant={handleTenantUpdate}
+              />
             </TabsContent>
 
             <TabsContent value="meters" id="มิเตอร์" className="mt-4">
@@ -1109,15 +1289,33 @@ export function BillingWorkspace({
             </TabsContent>
 
             <TabsContent value="invoices" id="ใบแจ้งหนี้" className="mt-4">
-              <InvoiceList data={data} cycleId={activeCycle?.id ?? ""} />
+              <InvoiceList
+                data={data}
+                cycleId={activeCycle?.id ?? ""}
+                onSendInvoice={handleSendInvoice}
+                onVoidInvoice={handleVoidInvoice}
+              />
             </TabsContent>
 
             <TabsContent value="payments" id="ชำระเงิน" className="mt-4">
-              <PaymentList data={data} cycleId={activeCycle?.id ?? ""} />
+              <PaymentList
+                data={data}
+                cycleId={activeCycle?.id ?? ""}
+                onVoidPayment={handleVoidPayment}
+              />
+            </TabsContent>
+
+            <TabsContent value="reports" id="รายงาน" className="mt-4">
+              <ReportsPanel data={data} cycleId={activeCycle?.id ?? ""} />
             </TabsContent>
 
             <TabsContent value="settings" id="ตั้งค่า" className="mt-4">
-              <SettingsPanel data={data} />
+              <SettingsPanel
+                data={data}
+                onOrganizationSubmit={handleOrganizationSubmit}
+                onRoleSubmit={handleRoleSubmit}
+                onUnitSubmit={handleUnitUpdate}
+              />
             </TabsContent>
           </Tabs>
         </section>
@@ -1205,10 +1403,20 @@ function ConfigStrip({ data }: { data: DashboardData }) {
       ok: data.clerkConfigured,
       text: data.clerkConfigured ? "เปิดล็อกอินแล้ว" : "โหมด dev ไม่บังคับล็อกอิน",
     },
+    {
+      label: "Stripe",
+      ok: data.stripeConfigured,
+      text: data.stripeConfigured ? "พร้อมรับเงินออนไลน์" : "ยังไม่ตั้งค่า env",
+    },
+    {
+      label: "Resend",
+      ok: data.resendConfigured,
+      text: data.resendConfigured ? "พร้อมส่งอีเมล" : "ยังไม่ตั้งค่า env",
+    },
   ];
 
   return (
-    <section className="grid gap-2 md:grid-cols-3">
+    <section className="grid gap-2 md:grid-cols-5">
       {items.map((item) => (
         <div
           key={item.label}
@@ -1476,9 +1684,15 @@ function getCycleBillingSummary(data: DashboardData, cycleId: string) {
 function TenantList({
   data,
   tenants,
+  onCreatePortalLink,
+  onRevokePortalLink,
+  onUpdateTenant,
 }: {
   data: DashboardData;
   tenants: Tenant[];
+  onCreatePortalLink?: (tenantId: string) => void;
+  onRevokePortalLink?: (linkId: string) => void;
+  onUpdateTenant?: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   if (!tenants.length) return <EmptyState label="ยังไม่มีผู้เช่า" />;
 
@@ -1486,6 +1700,9 @@ function TenantList({
     <section className="mt-4 grid gap-3 lg:grid-cols-2">
       {tenants.map((tenant) => {
         const unit = data.units.find((item) => item.tenantId === tenant.id);
+        const portalLinks = data.portalLinks.filter(
+          (link) => link.tenantId === tenant.id && link.active,
+        );
 
         return (
           <Card key={tenant.id} className="rounded-md">
@@ -1518,6 +1735,42 @@ function TenantList({
               <p className="line-clamp-2 text-muted-foreground">
                 {tenant.billingAddress || "ยังไม่มีที่อยู่สำหรับออกบิล"}
               </p>
+              <div className="flex flex-wrap gap-2">
+                {onUpdateTenant ? (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline">
+                        แก้ไข
+                      </Button>
+                    </DialogTrigger>
+                    <TenantDialog
+                      tenant={tenant}
+                      onSubmit={onUpdateTenant}
+                      title="แก้ไขผู้เช่า"
+                    />
+                  </Dialog>
+                ) : null}
+                {onCreatePortalLink ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onCreatePortalLink(tenant.id)}
+                  >
+                    <Link2 className="size-4" />
+                    สร้างลิงก์
+                  </Button>
+                ) : null}
+                {portalLinks.map((link) => (
+                  <Button
+                    key={link.id}
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onRevokePortalLink?.(link.id)}
+                  >
+                    ปิดลิงก์
+                  </Button>
+                ))}
+              </div>
             </CardContent>
           </Card>
         );
@@ -1618,10 +1871,14 @@ function InvoiceList({
   data,
   cycleId,
   compact,
+  onSendInvoice,
+  onVoidInvoice,
 }: {
   data: DashboardData;
   cycleId?: string;
   compact?: boolean;
+  onSendInvoice?: (invoiceId: string) => void;
+  onVoidInvoice?: (invoiceId: string) => void;
 }) {
   const sourceInvoices = cycleId
     ? data.invoices.filter((invoice) => invoice.cycleId === cycleId)
@@ -1681,7 +1938,7 @@ function InvoiceList({
               <TableHead>สถานะ</TableHead>
               <TableHead className="text-right">ยอดรวม</TableHead>
               <TableHead className="text-right">ค้างชำระ</TableHead>
-              <TableHead className="w-12"></TableHead>
+              <TableHead className="w-44"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -1703,7 +1960,29 @@ function InvoiceList({
                     {formatCurrency(invoice.balance)}
                   </TableCell>
                   <TableCell>
-                    <PrintButton href={`/print/invoice/${invoice.id}`} />
+                    <div className="flex justify-end gap-1">
+                      <PrintButton href={`/print/invoice/${invoice.id}`} />
+                      {onSendInvoice ? (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => onSendInvoice(invoice.id)}
+                          title="ส่งอีเมล"
+                        >
+                          <Mail className="size-4" />
+                        </Button>
+                      ) : null}
+                      {onVoidInvoice && invoice.status !== "void" ? (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => onVoidInvoice(invoice.id)}
+                          title="ยกเลิก"
+                        >
+                          <AlertCircle className="size-4" />
+                        </Button>
+                      ) : null}
+                    </div>
                   </TableCell>
                 </TableRow>
               );
@@ -1734,12 +2013,33 @@ function InvoiceList({
                   <Info label="ยอดรวม" value={formatCurrency(invoice.total)} />
                   <Info label="ค้างชำระ" value={formatCurrency(invoice.balance)} />
                 </div>
-                <Button asChild variant="outline" size="sm">
-                  <a href={`/print/invoice/${invoice.id}`}>
-                    <Printer className="size-4" />
-                    พิมพ์
-                  </a>
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild variant="outline" size="sm">
+                    <a href={`/print/invoice/${invoice.id}`}>
+                      <Printer className="size-4" />
+                      พิมพ์
+                    </a>
+                  </Button>
+                  {onSendInvoice ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onSendInvoice(invoice.id)}
+                    >
+                      <Mail className="size-4" />
+                      ส่งอีเมล
+                    </Button>
+                  ) : null}
+                  {onVoidInvoice && invoice.status !== "void" ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onVoidInvoice(invoice.id)}
+                    >
+                      ยกเลิก
+                    </Button>
+                  ) : null}
+                </div>
               </CardContent>
             </Card>
           );
@@ -1753,10 +2053,12 @@ function PaymentList({
   data,
   cycleId,
   compact,
+  onVoidPayment,
 }: {
   data: DashboardData;
   cycleId?: string;
   compact?: boolean;
+  onVoidPayment?: (paymentId: string) => void;
 }) {
   const cycleInvoiceIds = new Set(
     data.invoices
@@ -1800,6 +2102,15 @@ function PaymentList({
                     {formatCurrency(payment.amount)}
                   </span>
                   <PrintButton href={`/print/receipt/${payment.id}`} />
+                  {onVoidPayment && payment.refundStatus === "none" ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onVoidPayment(payment.id)}
+                    >
+                      ยกเลิก
+                    </Button>
+                  ) : null}
                 </div>
               </CardContent>
             </Card>
@@ -1810,7 +2121,77 @@ function PaymentList({
   );
 }
 
-function SettingsPanel({ data }: { data: DashboardData }) {
+function ReportsPanel({
+  data,
+  cycleId,
+}: {
+  data: DashboardData;
+  cycleId: string;
+}) {
+  const cycleInvoices = cycleId
+    ? data.invoices.filter((invoice) => invoice.cycleId === cycleId)
+    : data.invoices;
+  const outstanding = cycleInvoices.reduce(
+    (sum, invoice) => sum + invoice.balance,
+    0,
+  );
+  const total = cycleInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
+  const vat = cycleInvoices.reduce((sum, invoice) => sum + invoice.vatAmount, 0);
+  const reports = [
+    ["outstanding", "ยอดค้าง"],
+    ["payments", "ยอดรับเงิน"],
+    ["vat", "VAT"],
+    ["cycles", "รอบบิล"],
+    ["meters", "มิเตอร์"],
+  ];
+
+  return (
+    <section className="grid gap-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Card className="rounded-md">
+          <CardContent className="p-4">
+            <Info label="ยอดบิล" value={formatCurrency(total)} />
+          </CardContent>
+        </Card>
+        <Card className="rounded-md">
+          <CardContent className="p-4">
+            <Info label="ยอดค้าง" value={formatCurrency(outstanding)} />
+          </CardContent>
+        </Card>
+        <Card className="rounded-md">
+          <CardContent className="p-4">
+            <Info label="VAT" value={formatCurrency(vat)} />
+          </CardContent>
+        </Card>
+      </div>
+      <Card className="rounded-md">
+        <CardHeader>
+          <CardTitle className="text-base">Export CSV</CardTitle>
+          <CardDescription>ดาวน์โหลดข้อมูลสำหรับบัญชีและตรวจสอบยอด</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          {reports.map(([type, label]) => (
+            <Button key={type} asChild variant="outline">
+              <a href={`/api/reports/${type}`}>{label}</a>
+            </Button>
+          ))}
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
+function SettingsPanel({
+  data,
+  onOrganizationSubmit,
+  onRoleSubmit,
+  onUnitSubmit,
+}: {
+  data: DashboardData;
+  onOrganizationSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onRoleSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onUnitSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
   return (
     <section className="grid gap-4 lg:grid-cols-2">
       <Card className="rounded-md">
@@ -1818,11 +2199,39 @@ function SettingsPanel({ data }: { data: DashboardData }) {
           <CardTitle className="text-base">ข้อมูลผู้ออกเอกสาร</CardTitle>
           <CardDescription>ใช้ในใบแจ้งหนี้และใบเสร็จ</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-2 text-sm">
-          <Info label="ชื่อ" value={data.organization.name} />
-          <Info label="เลขประจำตัวผู้เสียภาษี" value={data.organization.taxId} />
-          <Info label="VAT เริ่มต้น" value={`${data.organization.vatRate}%`} />
-          <Info label="ที่อยู่" value={data.organization.address} />
+        <CardContent>
+          <form onSubmit={onOrganizationSubmit} className="grid gap-3">
+            <Field label="ชื่อบริษัท" name="name" defaultValue={data.organization.name} />
+            <Field label="เลขประจำตัวผู้เสียภาษี" name="taxId" defaultValue={data.organization.taxId} />
+            <Field label="โทร" name="phone" defaultValue={data.organization.phone} />
+            <Field label="อีเมล" name="email" type="email" defaultValue={data.organization.email} />
+            <Field label="VAT เริ่มต้น" name="vatRate" type="number" step="0.01" defaultValue={String(data.organization.vatRate)} />
+            <div className="grid gap-2">
+              <Label htmlFor="orgAddress">ที่อยู่</Label>
+              <Textarea
+                id="orgAddress"
+                name="address"
+                defaultValue={data.organization.address}
+                rows={3}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>คิด VAT เริ่มต้น</Label>
+              <Select
+                name="vatEnabledDefault"
+                defaultValue={data.organization.vatEnabledDefault ? "yes" : "no"}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="yes">คิด VAT</SelectItem>
+                  <SelectItem value="no">ไม่คิด VAT</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="submit">บันทึกข้อมูลบริษัท</Button>
+          </form>
         </CardContent>
       </Card>
       <Card className="rounded-md">
@@ -1832,20 +2241,61 @@ function SettingsPanel({ data }: { data: DashboardData }) {
         </CardHeader>
         <CardContent className="grid gap-3">
           {data.users.map((user) => (
-            <div
+            <form
               key={user.id}
-              className="flex items-center justify-between gap-3 border-b border-border pb-3 last:border-b-0 last:pb-0"
+              onSubmit={onRoleSubmit}
+              className="grid gap-3 border-b border-border pb-3 last:border-b-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_140px_auto] sm:items-center"
             >
+              <input type="hidden" name="userId" value={user.id} />
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{user.name}</p>
                 <p className="truncate text-xs text-muted-foreground">
                   {user.email}
                 </p>
               </div>
-              <Badge variant="outline" className="rounded-sm">
-                {user.role === "admin" ? "แอดมิน" : "พนักงาน"}
-              </Badge>
-            </div>
+              <Select name="role" defaultValue={user.role}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">แอดมิน</SelectItem>
+                  <SelectItem value="staff">พนักงาน</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button type="submit" size="sm" variant="outline">
+                บันทึก
+              </Button>
+            </form>
+          ))}
+        </CardContent>
+      </Card>
+      <Card className="rounded-md lg:col-span-2">
+        <CardHeader>
+          <CardTitle className="text-base">พื้นที่เช่า</CardTitle>
+          <CardDescription>แก้ค่าเช่า เรทไฟ และสถานะพื้นที่</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {data.units.map((unit) => (
+            <Card key={unit.id} className="rounded-md">
+              <CardContent className="grid gap-3 p-4">
+                <div>
+                  <p className="font-medium">{unit.code}</p>
+                  <p className="text-sm text-muted-foreground">{unit.name}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <Info label="ค่าเช่า" value={formatCurrency(unit.rentAmount)} />
+                  <Info label="ค่าไฟ" value={formatCurrency(unit.electricRate)} />
+                </div>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      แก้ไขพื้นที่
+                    </Button>
+                  </DialogTrigger>
+                  <UnitDialog data={data} unit={unit} onSubmit={onUnitSubmit} />
+                </Dialog>
+              </CardContent>
+            </Card>
           ))}
         </CardContent>
       </Card>
@@ -1932,31 +2382,60 @@ function CycleDialog({
 
 function TenantDialog({
   onSubmit,
+  tenant,
+  title = "เพิ่มผู้เช่า",
 }: {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  tenant?: Tenant;
+  title?: string;
 }) {
   return (
     <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
       <DialogHeader>
-        <DialogTitle>เพิ่มผู้เช่า</DialogTitle>
+        <DialogTitle>{title}</DialogTitle>
         <DialogDescription>ข้อมูลนี้ใช้ผูกพื้นที่และออกเอกสาร</DialogDescription>
       </DialogHeader>
       <form onSubmit={onSubmit} className="grid gap-4">
+        <input type="hidden" name="tenantId" value={tenant?.id ?? ""} />
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="รหัสผู้เช่า" name="code" placeholder="T-003" />
-          <Field label="ชื่อผู้เช่า" name="name" required />
-          <Field label="ผู้ติดต่อ" name="contactName" />
-          <Field label="โทร" name="phone" />
-          <Field label="อีเมล" name="email" type="email" />
-          <Field label="เลขภาษี" name="taxId" />
+          <Field
+            label="รหัสผู้เช่า"
+            name="code"
+            placeholder="T-003"
+            defaultValue={tenant?.code}
+          />
+          <Field
+            label="ชื่อผู้เช่า"
+            name="name"
+            defaultValue={tenant?.name}
+            required
+          />
+          <Field
+            label="ผู้ติดต่อ"
+            name="contactName"
+            defaultValue={tenant?.contactName}
+          />
+          <Field label="โทร" name="phone" defaultValue={tenant?.phone} />
+          <Field
+            label="อีเมล"
+            name="email"
+            type="email"
+            defaultValue={tenant?.email}
+          />
+          <Field label="เลขภาษี" name="taxId" defaultValue={tenant?.taxId} />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="billingAddress">ที่อยู่สำหรับออกบิล</Label>
-          <Textarea id="billingAddress" name="billingAddress" rows={3} />
+          <Textarea
+            id="billingAddress"
+            name="billingAddress"
+            rows={3}
+            defaultValue={tenant?.billingAddress}
+          />
         </div>
         <div className="grid gap-2">
           <Label>VAT</Label>
-          <Select name="vatEnabled" defaultValue="yes">
+          <Select name="vatEnabled" defaultValue={tenant?.vatEnabled === false ? "no" : "yes"}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -1967,6 +2446,80 @@ function TenantDialog({
           </Select>
         </div>
         <Button type="submit">บันทึกผู้เช่า</Button>
+      </form>
+    </DialogContent>
+  );
+}
+
+function UnitDialog({
+  data,
+  unit,
+  onSubmit,
+}: {
+  data: DashboardData;
+  unit: RentalUnit;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogHeader>
+        <DialogTitle>แก้ไขพื้นที่เช่า</DialogTitle>
+        <DialogDescription>ค่าเช่า เรทไฟ และผู้เช่าปัจจุบัน</DialogDescription>
+      </DialogHeader>
+      <form onSubmit={onSubmit} className="grid gap-4">
+        <input type="hidden" name="unitId" value={unit.id} />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="รหัสพื้นที่" name="code" defaultValue={unit.code} />
+          <Field label="ชื่อพื้นที่" name="name" defaultValue={unit.name} />
+          <Field
+            label="ค่าเช่า"
+            name="rentAmount"
+            type="number"
+            step="0.01"
+            defaultValue={String(unit.rentAmount)}
+          />
+          <Field
+            label="ค่าไฟต่อหน่วย"
+            name="electricRate"
+            type="number"
+            step="0.01"
+            defaultValue={String(unit.electricRate)}
+          />
+          <Field
+            label="เลขมิเตอร์"
+            name="meterSerial"
+            defaultValue={unit.meterSerial}
+          />
+          <div className="grid gap-2">
+            <Label>สถานะ</Label>
+            <Select name="status" defaultValue={unit.status}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="occupied">มีผู้เช่า</SelectItem>
+                <SelectItem value="vacant">ว่าง</SelectItem>
+                <SelectItem value="maintenance">ซ่อมบำรุง</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="grid gap-2">
+          <Label>ผู้เช่า</Label>
+          <Select name="tenantId" defaultValue={unit.tenantId || data.tenants[0]?.id}>
+            <SelectTrigger>
+              <SelectValue placeholder="เลือกผู้เช่า" />
+            </SelectTrigger>
+            <SelectContent>
+              {data.tenants.map((tenant) => (
+                <SelectItem key={tenant.id} value={tenant.id}>
+                  {tenant.code} · {tenant.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button type="submit">บันทึกพื้นที่เช่า</Button>
       </form>
     </DialogContent>
   );

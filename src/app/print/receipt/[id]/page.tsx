@@ -50,6 +50,10 @@ export default async function ReceiptPrintPage({
           </div>
           <div className="grid gap-2 text-sm">
             <DocRow label="ช่องทาง" value={paymentMethod(payment.method)} />
+            <DocRow
+              label="ผู้ให้บริการ"
+              value={payment.provider === "stripe" ? "Stripe PromptPay" : "บันทึกเอง"}
+            />
             <DocRow label="อ้างอิง" value={payment.reference || "-"} />
             <DocRow label="หมายเหตุ" value={payment.notes || "-"} />
           </div>

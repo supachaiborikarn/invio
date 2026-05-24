@@ -8,6 +8,13 @@
       "when": 1779599305934,
       "tag": "0000_fresh_starjammers",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779636012522,
+      "tag": "0001_brave_norrin_radd",
+      "breakpoints": true
     }
   ]
 }

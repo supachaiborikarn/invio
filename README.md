@@ -9,6 +9,8 @@
 - Drizzle ORM
 - Clerk สำหรับล็อกอินแอดมินและพนักงาน
 - Cloudinary สำหรับรูปมิเตอร์แบบ signed upload
+- Stripe PromptPay สำหรับรับเงินออนไลน์
+- Resend สำหรับส่งลิงก์ใบแจ้งหนี้และใบเสร็จ
 - shadcn/ui, Tailwind CSS, Geist, Noto Sans Thai
 
 ## ตั้งค่า env
@@ -26,9 +28,16 @@ NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 CLOUDINARY_UPLOAD_FOLDER=meter-readings
+
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+NEXT_PUBLIC_APP_URL=http://localhost:3001
+
+RESEND_API_KEY=
+BILLING_EMAIL_FROM=
 ```
 
-ถ้ายังไม่ตั้งค่า env ระบบจะเปิดหน้า demo ได้ และจะแจ้งสถานะ Neon, Cloudinary, Clerk บนหน้า dashboard.
+ถ้ายังไม่ตั้งค่า env ระบบจะเปิดหน้า demo ได้ และจะแจ้งสถานะ Neon, Cloudinary, Clerk, Stripe, และ Resend บนหน้า dashboard.
 
 ## คำสั่งหลัก
 
@@ -47,6 +56,10 @@ npm run db:studio
 - `/` dashboard จัดการผู้เช่า, พื้นที่, มิเตอร์, ใบแจ้งหนี้, และการชำระเงิน
 - `/api/cloudinary/sign` ออก signature สำหรับอัปโหลดรูปมิเตอร์
 - `/api/meter-images/[id]` เปิดรูปมิเตอร์ผ่าน route ที่ตรวจสิทธิ์
+- `/portal/[token]` หน้า portal ผู้เช่าสำหรับดูบิลและใบเสร็จ
+- `/api/payments/stripe/checkout` สร้าง Stripe Checkout Session
+- `/api/payments/stripe/webhook` รับ webhook จาก Stripe
+- `/api/reports/[type]` export รายงาน CSV
 - `/print/invoice/[id]` หน้าใบแจ้งหนี้สำหรับพิมพ์หรือบันทึก PDF
 - `/print/receipt/[id]` หน้าใบเสร็จสำหรับพิมพ์หรือบันทึก PDF
 

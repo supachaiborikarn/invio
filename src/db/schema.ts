@@ -45,6 +45,25 @@ export const paymentMethodEnum = pgEnum("payment_method", [
   "promptpay",
   "other",
 ]);
+export const paymentProviderEnum = pgEnum("payment_provider", [
+  "manual",
+  "stripe",
+]);
+export const paymentSessionStatusEnum = pgEnum("payment_session_status", [
+  "created",
+  "open",
+  "paid",
+  "expired",
+  "canceled",
+  "failed",
+]);
+export const refundStatusEnum = pgEnum("refund_status", [
+  "none",
+  "requested",
+  "partial",
+  "refunded",
+  "failed",
+]);
 
 export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -206,6 +225,36 @@ export const meterReadings = pgTable("meter_readings", {
   }),
 });
 
+export const tenantPortalLinks = pgTable(
+  "tenant_portal_links",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    label: text("label").notNull().default("ลิงก์ผู้เช่า"),
+    active: boolean("active").notNull().default(true),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    lastViewedAt: timestamp("last_viewed_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdByUserId: uuid("created_by_user_id").references(() => appUsers.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tokenHashUnique: uniqueIndex("tenant_portal_links_token_hash_unique").on(
+      table.tokenHash,
+    ),
+  }),
+);
+
 export const invoices = pgTable(
   "invoices",
   {
@@ -277,6 +326,11 @@ export const payments = pgTable(
     paidAt: timestamp("paid_at", { withTimezone: true }).notNull(),
     amountSatang: integer("amount_satang").notNull(),
     method: paymentMethodEnum("method").notNull().default("bank_transfer"),
+    provider: paymentProviderEnum("provider").notNull().default("manual"),
+    providerSessionId: text("provider_session_id").notNull().default(""),
+    providerPaymentId: text("provider_payment_id").notNull().default(""),
+    webhookEventId: text("webhook_event_id").notNull().default(""),
+    refundStatus: refundStatusEnum("refund_status").notNull().default("none"),
     reference: text("reference").notNull().default(""),
     notes: text("notes").notNull().default(""),
     createdByUserId: uuid("created_by_user_id").references(() => appUsers.id, {
@@ -293,3 +347,74 @@ export const payments = pgTable(
     ),
   }),
 );
+
+export const paymentSessions = pgTable("payment_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  invoiceId: uuid("invoice_id")
+    .notNull()
+    .references(() => invoices.id, { onDelete: "cascade" }),
+  tenantId: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id, { onDelete: "cascade" }),
+  provider: paymentProviderEnum("provider").notNull().default("stripe"),
+  status: paymentSessionStatusEnum("status").notNull().default("created"),
+  amountSatang: integer("amount_satang").notNull(),
+  currency: text("currency").notNull().default("thb"),
+  providerSessionId: text("provider_session_id").notNull().default(""),
+  providerPaymentId: text("provider_payment_id").notNull().default(""),
+  checkoutUrl: text("checkout_url").notNull().default(""),
+  portalTokenHash: text("portal_token_hash").notNull().default(""),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const paymentEvents = pgTable(
+  "payment_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    provider: paymentProviderEnum("provider").notNull().default("stripe"),
+    eventId: text("event_id").notNull(),
+    eventType: text("event_type").notNull(),
+    providerSessionId: text("provider_session_id").notNull().default(""),
+    providerPaymentId: text("provider_payment_id").notNull().default(""),
+    payload: text("payload").notNull().default(""),
+    receivedAt: timestamp("received_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    eventIdUnique: uniqueIndex("payment_events_event_id_unique").on(
+      table.eventId,
+    ),
+  }),
+);
+
+export const invoiceAuditLogs = pgTable("invoice_audit_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  invoiceId: uuid("invoice_id")
+    .notNull()
+    .references(() => invoices.id, { onDelete: "cascade" }),
+  actorUserId: uuid("actor_user_id").references(() => appUsers.id, {
+    onDelete: "set null",
+  }),
+  action: text("action").notNull(),
+  reason: text("reason").notNull().default(""),
+  metadata: text("metadata").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});

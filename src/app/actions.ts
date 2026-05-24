@@ -5,13 +5,16 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getDb, hasDatabase } from "@/db";
 import {
+  appUsers,
   billingCycles,
+  invoiceAuditLogs,
   invoiceItems,
   invoices,
   meterReadings,
   organizations,
   payments,
   rentalUnits,
+  tenantPortalLinks,
   tenants,
 } from "@/db/schema";
 import { requireAppUser, type AuthResult } from "@/lib/auth";
@@ -22,6 +25,9 @@ import {
   nextRunningNo,
   toSatang,
 } from "@/lib/billing";
+import { getBillingEmailFrom, getResend } from "@/lib/email";
+import { getAppUrl, isResendConfigured } from "@/lib/dashboard-data";
+import { createPortalToken, hashPortalToken } from "@/lib/portal";
 import type { InvoiceItem, InvoiceType } from "@/lib/types";
 
 type ActionResult = {
@@ -49,6 +55,17 @@ async function requireStaffAction(): Promise<StaffActionAuth> {
 
   if (!user.ok) {
     return { ok: false, message: user.message };
+  }
+
+  return user;
+}
+
+async function requireAdminAction(): Promise<StaffActionAuth> {
+  const user = await requireStaffAction();
+
+  if (!user.ok) return user;
+  if (user.role !== "admin") {
+    return { ok: false, message: "ต้องเป็นแอดมินก่อนทำรายการนี้" };
   }
 
   return user;
@@ -83,6 +100,10 @@ function requireDatabase(): ActionResult | null {
 
 function invoicePrefixFromDate(value: Date) {
   return `INV-${value.getFullYear() + 543}${String(value.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function receiptPrefixFromDate(value: Date) {
+  return `RCPT-${value.getFullYear() + 543}${String(value.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function toDateValue(value: string) {
@@ -137,6 +158,41 @@ export async function createTenantAction(
   return { ok: true, message: "เพิ่มผู้เช่าแล้ว" };
 }
 
+export async function updateTenantAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const tenantId = textValue(formData, "tenantId");
+  const parsed = tenantSchema.safeParse({
+    code: textValue(formData, "code"),
+    name: textValue(formData, "name"),
+    contactName: textValue(formData, "contactName"),
+    taxId: textValue(formData, "taxId"),
+    phone: textValue(formData, "phone"),
+    email: textValue(formData, "email"),
+    billingAddress: textValue(formData, "billingAddress"),
+    vatEnabled: booleanValue(formData, "vatEnabled"),
+  });
+
+  if (!tenantId || !parsed.success) {
+    return { ok: false, message: "ข้อมูลผู้เช่าไม่ครบ" };
+  }
+
+  await getDb()
+    .update(tenants)
+    .set({ ...parsed.data, updatedAt: new Date() })
+    .where(eq(tenants.id, tenantId));
+
+  revalidatePath("/");
+  return { ok: true, message: "แก้ไขผู้เช่าแล้ว" };
+}
+
 const unitSchema = z.object({
   code: z.string().min(1),
   name: z.string().min(1),
@@ -144,6 +200,10 @@ const unitSchema = z.object({
   rentAmount: z.number().min(0),
   electricRate: z.number().min(0),
   meterSerial: z.string().optional(),
+});
+
+const updateUnitSchema = unitSchema.extend({
+  tenantId: z.string().uuid().optional().or(z.literal("")),
 });
 
 export async function createUnitAction(
@@ -156,7 +216,7 @@ export async function createUnitAction(
   const databaseError = requireDatabase();
   if (databaseError) return databaseError;
 
-  const parsed = unitSchema.safeParse({
+  const parsed = updateUnitSchema.safeParse({
     code: textValue(formData, "code"),
     name: textValue(formData, "name"),
     tenantId: textValue(formData, "tenantId"),
@@ -174,17 +234,120 @@ export async function createUnitAction(
 
   await db.insert(rentalUnits).values({
     organizationId,
-    tenantId: parsed.data.tenantId,
+    tenantId: parsed.data.tenantId || null,
     code: parsed.data.code,
     name: parsed.data.name,
     rentAmountSatang: toSatang(parsed.data.rentAmount),
     electricRateSatang: toSatang(parsed.data.electricRate),
     meterSerial: parsed.data.meterSerial,
-    status: "occupied",
+    status: parsed.data.tenantId ? "occupied" : "vacant",
   });
 
   revalidatePath("/");
   return { ok: true, message: "เพิ่มพื้นที่เช่าแล้ว" };
+}
+
+export async function updateUnitAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const unitId = textValue(formData, "unitId");
+  const status = textValue(formData, "status");
+  const parsed = updateUnitSchema.safeParse({
+    code: textValue(formData, "code"),
+    name: textValue(formData, "name"),
+    tenantId: textValue(formData, "tenantId"),
+    rentAmount: numberValue(formData, "rentAmount"),
+    electricRate: numberValue(formData, "electricRate"),
+    meterSerial: textValue(formData, "meterSerial"),
+  });
+
+  if (
+    !unitId ||
+    !parsed.success ||
+    !["occupied", "vacant", "maintenance"].includes(status)
+  ) {
+    return { ok: false, message: "ข้อมูลพื้นที่ไม่ครบ" };
+  }
+
+  await getDb()
+    .update(rentalUnits)
+    .set({
+      tenantId: status === "occupied" ? parsed.data.tenantId || null : null,
+      code: parsed.data.code,
+      name: parsed.data.name,
+      rentAmountSatang: toSatang(parsed.data.rentAmount),
+      electricRateSatang: toSatang(parsed.data.electricRate),
+      meterSerial: parsed.data.meterSerial,
+      status: status as "occupied" | "vacant" | "maintenance",
+      updatedAt: new Date(),
+    })
+    .where(eq(rentalUnits.id, unitId));
+
+  revalidatePath("/");
+  return { ok: true, message: "แก้ไขพื้นที่เช่าแล้ว" };
+}
+
+export async function updateOrganizationAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireAdminAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const organizationId = await getDefaultOrganizationId();
+
+  await getDb()
+    .update(organizations)
+    .set({
+      name: textValue(formData, "name") || "องค์กรของฉัน",
+      taxId: textValue(formData, "taxId"),
+      address: textValue(formData, "address"),
+      phone: textValue(formData, "phone"),
+      email: textValue(formData, "email"),
+      vatRateBasisPoints: Math.round(numberValue(formData, "vatRate") * 100),
+      vatEnabledDefault: booleanValue(formData, "vatEnabledDefault"),
+      updatedAt: new Date(),
+    })
+    .where(eq(organizations.id, organizationId));
+
+  revalidatePath("/");
+  return { ok: true, message: "แก้ไขข้อมูลบริษัทแล้ว" };
+}
+
+export async function updateUserRoleAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireAdminAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const userId = textValue(formData, "userId");
+  const role = textValue(formData, "role");
+
+  if (!userId || !["admin", "staff"].includes(role)) {
+    return { ok: false, message: "ข้อมูลผู้ใช้ไม่ครบ" };
+  }
+
+  await getDb()
+    .update(appUsers)
+    .set({ role: role as "admin" | "staff" })
+    .where(eq(appUsers.id, userId));
+
+  revalidatePath("/");
+  return { ok: true, message: "อัปเดตสิทธิ์ผู้ใช้แล้ว" };
 }
 
 const cycleSchema = z.object({
@@ -766,6 +929,138 @@ export async function generateBatchInvoicesAction(
   };
 }
 
+async function createPortalLink(
+  tenantId: string,
+  createdByUserId: string | null,
+) {
+  const token = createPortalToken();
+  const tokenHash = hashPortalToken(token);
+  const db = getDb();
+  const organizationId = await getDefaultOrganizationId();
+  const [link] = await db
+    .insert(tenantPortalLinks)
+    .values({
+      organizationId,
+      tenantId,
+      tokenHash,
+      createdByUserId,
+    })
+    .returning({ id: tenantPortalLinks.id });
+
+  return {
+    token,
+    tokenHash,
+    linkId: link.id,
+    url: `${getAppUrl()}/portal/${token}`,
+  };
+}
+
+export async function createTenantPortalLinkAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const tenantId = textValue(formData, "tenantId");
+  if (!tenantId) return { ok: false, message: "ไม่พบผู้เช่า" };
+
+  const link = await createPortalLink(tenantId, user.appUserId);
+
+  revalidatePath("/");
+  return { ok: true, message: `สร้างลิงก์ผู้เช่าแล้ว: ${link.url}` };
+}
+
+export async function revokeTenantPortalLinkAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const linkId = textValue(formData, "linkId");
+  if (!linkId) return { ok: false, message: "ไม่พบลิงก์" };
+
+  await getDb()
+    .update(tenantPortalLinks)
+    .set({ active: false, revokedAt: new Date() })
+    .where(eq(tenantPortalLinks.id, linkId));
+
+  revalidatePath("/");
+  return { ok: true, message: "ปิดลิงก์ผู้เช่าแล้ว" };
+}
+
+export async function sendInvoiceEmailAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const invoiceId = textValue(formData, "invoiceId");
+  const db = getDb();
+  const [[invoice], tenantRows] = await Promise.all([
+    db.select().from(invoices).where(eq(invoices.id, invoiceId)).limit(1),
+    db.select().from(tenants),
+  ]);
+  const tenant = tenantRows.find((item) => item.id === invoice?.tenantId);
+
+  if (!invoice || !tenant) {
+    return { ok: false, message: "ไม่พบใบแจ้งหนี้" };
+  }
+
+  const link = await createPortalLink(tenant.id, user.appUserId);
+  const invoiceUrl = `${link.url}/invoice/${invoice.id}`;
+
+  if (!tenant.email) {
+    revalidatePath("/");
+    return {
+      ok: true,
+      message: `ผู้เช่ายังไม่มีอีเมล ใช้ลิงก์นี้แทน: ${invoiceUrl}`,
+    };
+  }
+
+  if (!isResendConfigured()) {
+    revalidatePath("/");
+    return {
+      ok: true,
+      message: `ยังไม่ตั้งค่า Resend ส่งเมลไม่ได้ ใช้ลิงก์นี้แทน: ${invoiceUrl}`,
+    };
+  }
+
+  const resend = getResend();
+  const { error } = await resend.emails.send({
+    from: getBillingEmailFrom(),
+    to: tenant.email,
+    subject: `ใบแจ้งหนี้ ${invoice.invoiceNo}`,
+    html: `
+      <div style="font-family: sans-serif; line-height: 1.6">
+        <h2>ใบแจ้งหนี้ ${invoice.invoiceNo}</h2>
+        <p>เรียน ${tenant.name}</p>
+        <p>กรุณาตรวจสอบใบแจ้งหนี้และชำระเงินผ่านลิงก์ด้านล่าง</p>
+        <p><a href="${invoiceUrl}">เปิดใบแจ้งหนี้และชำระเงิน</a></p>
+        <p>ยอดค้างชำระ ${(invoice.balanceSatang / 100).toLocaleString("th-TH", { style: "currency", currency: "THB" })}</p>
+      </div>
+    `,
+  });
+
+  if (error) {
+    return { ok: false, message: error.message ?? "ส่งอีเมลไม่สำเร็จ" };
+  }
+
+  revalidatePath("/");
+  return { ok: true, message: "ส่งอีเมลใบแจ้งหนี้แล้ว" };
+}
+
 export async function recordPaymentAction(
   _previousState: ActionResult,
   formData: FormData,
@@ -801,7 +1096,7 @@ export async function recordPaymentAction(
     .from(payments)
     .where(eq(payments.organizationId, organizationId));
   const receiptNo = nextRunningNo(
-    `RCPT-${new Date().getFullYear() + 543}${String(new Date().getMonth() + 1).padStart(2, "0")}`,
+    receiptPrefixFromDate(new Date()),
     Number(countRow?.count ?? 0),
   );
   const paidSatang = invoice.paidSatang + toSatang(amount);
@@ -824,6 +1119,7 @@ export async function recordPaymentAction(
     )
       ? (textValue(formData, "method") as "cash" | "bank_transfer" | "promptpay" | "other")
       : "bank_transfer",
+    provider: "manual",
     reference: textValue(formData, "reference"),
     notes: textValue(formData, "notes"),
     createdByUserId: user.appUserId,
@@ -841,4 +1137,120 @@ export async function recordPaymentAction(
 
   revalidatePath("/");
   return { ok: true, message: "บันทึกชำระเงินแล้ว" };
+}
+
+export async function voidInvoiceAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const invoiceId = textValue(formData, "invoiceId");
+  const reason = textValue(formData, "reason");
+
+  if (!invoiceId || !reason) {
+    return { ok: false, message: "กรุณาระบุเหตุผลยกเลิกใบแจ้งหนี้" };
+  }
+
+  const db = getDb();
+  const organizationId = await getDefaultOrganizationId();
+
+  await db
+    .update(invoices)
+    .set({
+      status: "void",
+      balanceSatang: 0,
+      notes: reason,
+      updatedAt: new Date(),
+    })
+    .where(eq(invoices.id, invoiceId));
+
+  await db.insert(invoiceAuditLogs).values({
+    organizationId,
+    invoiceId,
+    actorUserId: user.appUserId,
+    action: "void_invoice",
+    reason,
+  });
+
+  revalidatePath("/");
+  return { ok: true, message: "ยกเลิกใบแจ้งหนี้แล้ว" };
+}
+
+export async function voidPaymentAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const paymentId = textValue(formData, "paymentId");
+  const reason = textValue(formData, "reason");
+
+  if (!paymentId || !reason) {
+    return { ok: false, message: "กรุณาระบุเหตุผลยกเลิกรับเงิน" };
+  }
+
+  const db = getDb();
+  const [payment] = await db
+    .select()
+    .from(payments)
+    .where(eq(payments.id, paymentId))
+    .limit(1);
+
+  if (!payment) return { ok: false, message: "ไม่พบรายการรับเงิน" };
+
+  const [invoice] = await db
+    .select()
+    .from(invoices)
+    .where(eq(invoices.id, payment.invoiceId))
+    .limit(1);
+
+  if (!invoice) return { ok: false, message: "ไม่พบใบแจ้งหนี้" };
+
+  const paidSatang = Math.max(invoice.paidSatang - payment.amountSatang, 0);
+  const balanceSatang = Math.max(invoice.totalSatang - paidSatang, 0);
+  const status = deriveInvoiceStatus({
+    total: invoice.totalSatang / 100,
+    paid: paidSatang / 100,
+    dueDate: invoice.dueDate.toISOString(),
+    issued: true,
+  });
+
+  await db
+    .update(payments)
+    .set({
+      refundStatus: payment.provider === "stripe" ? "requested" : "refunded",
+      notes: [payment.notes, `ยกเลิก: ${reason}`].filter(Boolean).join("\n"),
+    })
+    .where(eq(payments.id, paymentId));
+
+  await db
+    .update(invoices)
+    .set({
+      paidSatang,
+      balanceSatang,
+      status,
+      updatedAt: new Date(),
+    })
+    .where(eq(invoices.id, invoice.id));
+
+  await db.insert(invoiceAuditLogs).values({
+    organizationId: invoice.organizationId,
+    invoiceId: invoice.id,
+    actorUserId: user.appUserId,
+    action: "void_payment",
+    reason,
+    metadata: payment.receiptNo,
+  });
+
+  revalidatePath("/");
+  return { ok: true, message: "ยกเลิกรายการรับเงินแล้ว" };
 }

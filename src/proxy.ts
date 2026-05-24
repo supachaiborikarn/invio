@@ -9,6 +9,14 @@ const clerk = clerkMiddleware(async (auth, request) => {
 });
 
 export default function proxy(request: NextRequest, event: NextFetchEvent) {
+  const publicPath =
+    request.nextUrl.pathname.startsWith("/portal") ||
+    request.nextUrl.pathname.startsWith("/api/payments/stripe");
+
+  if (publicPath) {
+    return NextResponse.next();
+  }
+
   const clerkConfigured = Boolean(
     process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY &&
       process.env.CLERK_SECRET_KEY,
