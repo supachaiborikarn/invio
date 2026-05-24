@@ -1,0 +1,64 @@
+# ระบบใบแจ้งหนี้ค่าเช่าและค่าไฟ
+
+เว็บแอพสำหรับออกใบแจ้งหนี้ผู้เช่าหลายราย, บันทึกเลขมิเตอร์พร้อมรูปถ่าย, คำนวณค่าไฟตามเรทต่อหน่วย, บันทึกชำระเงิน, และพิมพ์ใบแจ้งหนี้หรือใบเสร็จเป็น PDF ผ่าน browser print.
+
+## Stack
+
+- Next.js App Router
+- Neon Postgres
+- Drizzle ORM
+- Clerk สำหรับล็อกอินแอดมินและพนักงาน
+- Cloudinary สำหรับรูปมิเตอร์แบบ signed upload
+- shadcn/ui, Tailwind CSS, Geist, Noto Sans Thai
+
+## ตั้งค่า env
+
+คัดลอก `.env.example` เป็น `.env.local` แล้วใส่ค่าเหล่านี้.
+
+```bash
+DATABASE_URL=
+DATABASE_URL_UNPOOLED=
+
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+CLOUDINARY_UPLOAD_FOLDER=meter-readings
+```
+
+ถ้ายังไม่ตั้งค่า env ระบบจะเปิดหน้า demo ได้ และจะแจ้งสถานะ Neon, Cloudinary, Clerk บนหน้า dashboard.
+
+## คำสั่งหลัก
+
+```bash
+npm run dev
+npm run build
+npm run lint
+npm run typecheck
+npm run db:generate
+npm run db:migrate
+npm run db:studio
+```
+
+## หน้าหลัก
+
+- `/` dashboard จัดการผู้เช่า, พื้นที่, มิเตอร์, ใบแจ้งหนี้, และการชำระเงิน
+- `/api/cloudinary/sign` ออก signature สำหรับอัปโหลดรูปมิเตอร์
+- `/api/meter-images/[id]` เปิดรูปมิเตอร์ผ่าน route ที่ตรวจสิทธิ์
+- `/print/invoice/[id]` หน้าใบแจ้งหนี้สำหรับพิมพ์หรือบันทึก PDF
+- `/print/receipt/[id]` หน้าใบเสร็จสำหรับพิมพ์หรือบันทึก PDF
+
+## ฐานข้อมูล
+
+schema อยู่ที่ `src/db/schema.ts`.
+
+หลังตั้งค่า Neon แล้วให้รัน:
+
+```bash
+npm run db:generate
+npm run db:migrate
+```
+
+ตัวเชื่อมฐานข้อมูลอยู่ที่ `src/db/index.ts` และโหลดตอนใช้งานจริงเพื่อให้ `next build` ผ่านแม้ env ยังไม่ครบ.

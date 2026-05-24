@@ -1,0 +1,473 @@
+"use server";
+
+import { eq, sql } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { getDb, hasDatabase } from "@/db";
+import {
+  billingCycles,
+  invoiceItems,
+  invoices,
+  meterReadings,
+  organizations,
+  payments,
+  rentalUnits,
+  tenants,
+} from "@/db/schema";
+import {
+  calculateElectricityCharge,
+  calculateInvoiceTotals,
+  deriveInvoiceStatus,
+  nextRunningNo,
+  toSatang,
+} from "@/lib/billing";
+import type { InvoiceType } from "@/lib/types";
+
+type ActionResult = {
+  ok: boolean;
+  message: string;
+};
+
+function textValue(formData: FormData, key: string) {
+  return String(formData.get(key) ?? "").trim();
+}
+
+function numberValue(formData: FormData, key: string) {
+  return Number(String(formData.get(key) ?? "0").replace(/,/g, ""));
+}
+
+function booleanValue(formData: FormData, key: string) {
+  return ["on", "yes", "true", "1"].includes(textValue(formData, key));
+}
+
+async function getDefaultOrganizationId() {
+  const db = getDb();
+  const [existing] = await db.select().from(organizations).limit(1);
+
+  if (existing) return existing.id;
+
+  const [created] = await db
+    .insert(organizations)
+    .values({
+      name: "องค์กรของฉัน",
+      vatRateBasisPoints: 700,
+      vatEnabledDefault: true,
+    })
+    .returning({ id: organizations.id });
+
+  return created.id;
+}
+
+function requireDatabase(): ActionResult | null {
+  if (hasDatabase()) return null;
+
+  return {
+    ok: false,
+    message: "ยังไม่ได้ตั้งค่า DATABASE_URL จึงบันทึกลง Neon ไม่ได้",
+  };
+}
+
+const tenantSchema = z.object({
+  code: z.string().min(1),
+  name: z.string().min(1),
+  contactName: z.string().optional(),
+  taxId: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email().optional().or(z.literal("")),
+  billingAddress: z.string().optional(),
+  vatEnabled: z.boolean(),
+});
+
+export async function createTenantAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const parsed = tenantSchema.safeParse({
+    code: textValue(formData, "code"),
+    name: textValue(formData, "name"),
+    contactName: textValue(formData, "contactName"),
+    taxId: textValue(formData, "taxId"),
+    phone: textValue(formData, "phone"),
+    email: textValue(formData, "email"),
+    billingAddress: textValue(formData, "billingAddress"),
+    vatEnabled: booleanValue(formData, "vatEnabled"),
+  });
+
+  if (!parsed.success) {
+    return { ok: false, message: "ข้อมูลผู้เช่าไม่ครบ" };
+  }
+
+  const db = getDb();
+  const organizationId = await getDefaultOrganizationId();
+
+  await db.insert(tenants).values({
+    organizationId,
+    ...parsed.data,
+  });
+
+  revalidatePath("/");
+  return { ok: true, message: "เพิ่มผู้เช่าแล้ว" };
+}
+
+const unitSchema = z.object({
+  code: z.string().min(1),
+  name: z.string().min(1),
+  tenantId: z.string().uuid(),
+  rentAmount: z.number().min(0),
+  electricRate: z.number().min(0),
+  meterSerial: z.string().optional(),
+});
+
+export async function createUnitAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const parsed = unitSchema.safeParse({
+    code: textValue(formData, "code"),
+    name: textValue(formData, "name"),
+    tenantId: textValue(formData, "tenantId"),
+    rentAmount: numberValue(formData, "rentAmount"),
+    electricRate: numberValue(formData, "electricRate"),
+    meterSerial: textValue(formData, "meterSerial"),
+  });
+
+  if (!parsed.success) {
+    return { ok: false, message: "ข้อมูลพื้นที่ไม่ครบ" };
+  }
+
+  const db = getDb();
+  const organizationId = await getDefaultOrganizationId();
+
+  await db.insert(rentalUnits).values({
+    organizationId,
+    tenantId: parsed.data.tenantId,
+    code: parsed.data.code,
+    name: parsed.data.name,
+    rentAmountSatang: toSatang(parsed.data.rentAmount),
+    electricRateSatang: toSatang(parsed.data.electricRate),
+    meterSerial: parsed.data.meterSerial,
+    status: "occupied",
+  });
+
+  revalidatePath("/");
+  return { ok: true, message: "เพิ่มพื้นที่เช่าแล้ว" };
+}
+
+const meterSchema = z.object({
+  unitId: z.string().uuid(),
+  tenantId: z.string().uuid().optional().or(z.literal("")),
+  billingCycleId: z.string().uuid(),
+  previousReading: z.number().min(0),
+  currentReading: z.number().min(0),
+  rate: z.number().min(0),
+  cloudinaryPublicId: z.string().optional(),
+  cloudinaryAssetId: z.string().optional(),
+  cloudinarySecureUrl: z.string().optional(),
+  cloudinaryVersion: z.number().optional(),
+  imageWidth: z.number().optional(),
+  imageHeight: z.number().optional(),
+});
+
+export async function recordMeterReadingAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const parsed = meterSchema.safeParse({
+    unitId: textValue(formData, "unitId"),
+    tenantId: textValue(formData, "tenantId"),
+    billingCycleId: textValue(formData, "billingCycleId") || textValue(formData, "cycleId"),
+    previousReading: numberValue(formData, "previousReading"),
+    currentReading: numberValue(formData, "currentReading"),
+    rate: numberValue(formData, "rate"),
+    cloudinaryPublicId: textValue(formData, "cloudinaryPublicId"),
+    cloudinaryAssetId: textValue(formData, "cloudinaryAssetId"),
+    cloudinarySecureUrl: textValue(formData, "cloudinarySecureUrl"),
+    cloudinaryVersion: numberValue(formData, "cloudinaryVersion") || undefined,
+    imageWidth: numberValue(formData, "imageWidth") || undefined,
+    imageHeight: numberValue(formData, "imageHeight") || undefined,
+  });
+
+  if (!parsed.success) {
+    return { ok: false, message: "ข้อมูลมิเตอร์ไม่ครบ" };
+  }
+
+  const { usageUnits, amount, warning } = calculateElectricityCharge(parsed.data);
+  const db = getDb();
+  const organizationId = await getDefaultOrganizationId();
+  let tenantId = parsed.data.tenantId;
+
+  if (!tenantId) {
+    const [unit] = await db
+      .select({ tenantId: rentalUnits.tenantId })
+      .from(rentalUnits)
+      .where(eq(rentalUnits.id, parsed.data.unitId))
+      .limit(1);
+    tenantId = unit?.tenantId ?? "";
+  }
+
+  if (!tenantId) {
+    return { ok: false, message: "พื้นที่นี้ยังไม่ได้ผูกผู้เช่า" };
+  }
+
+  const [reading] = await db.insert(meterReadings).values({
+    organizationId,
+    unitId: parsed.data.unitId,
+    tenantId,
+    billingCycleId: parsed.data.billingCycleId,
+    previousReading: parsed.data.previousReading,
+    currentReading: parsed.data.currentReading,
+    usageUnits,
+    rateSatang: toSatang(parsed.data.rate),
+    amountSatang: toSatang(amount),
+    cloudinaryPublicId: parsed.data.cloudinaryPublicId ?? "",
+    cloudinaryAssetId: parsed.data.cloudinaryAssetId ?? "",
+    cloudinarySecureUrl: parsed.data.cloudinarySecureUrl ?? "",
+    cloudinaryVersion: parsed.data.cloudinaryVersion,
+    imageWidth: parsed.data.imageWidth,
+    imageHeight: parsed.data.imageHeight,
+    warning: warning ?? "",
+  }).returning({ id: meterReadings.id });
+
+  if (booleanValue(formData, "createInvoice")) {
+    const [[tenant], [cycle], [countRow]] = await Promise.all([
+      db.select().from(tenants).where(eq(tenants.id, tenantId)).limit(1),
+      db
+        .select()
+        .from(billingCycles)
+        .where(eq(billingCycles.id, parsed.data.billingCycleId))
+        .limit(1),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(invoices)
+        .where(eq(invoices.organizationId, organizationId)),
+    ]);
+    const invoiceItem = {
+      id: "new",
+      type: "electricity" as InvoiceType,
+      description: `ค่าไฟ ${usageUnits} หน่วย`,
+      quantity: usageUnits,
+      unitPrice: parsed.data.rate,
+      amount,
+    };
+    const totals = calculateInvoiceTotals({
+      items: [invoiceItem],
+      vatEnabled: tenant?.vatEnabled ?? true,
+      vatRate: 7,
+    });
+    const invoiceNo = nextRunningNo(
+      `INV-${new Date().getFullYear() + 543}${String(new Date().getMonth() + 1).padStart(2, "0")}`,
+      Number(countRow?.count ?? 0),
+    );
+    const [invoice] = await db
+      .insert(invoices)
+      .values({
+        organizationId,
+        tenantId,
+        billingCycleId: parsed.data.billingCycleId,
+        invoiceNo,
+        type: "electricity",
+        issueDate: new Date(),
+        dueDate: cycle?.dueDate ?? new Date(),
+        subtotalSatang: toSatang(totals.subtotal),
+        discountSatang: 0,
+        vatRateBasisPoints: totals.vatRate * 100,
+        vatEnabled: tenant?.vatEnabled ?? true,
+        vatAmountSatang: toSatang(totals.vatAmount),
+        totalSatang: toSatang(totals.total),
+        balanceSatang: toSatang(totals.balance),
+        status: "issued",
+        notes: warning ?? "",
+      })
+      .returning({ id: invoices.id });
+
+    await db.insert(invoiceItems).values({
+      invoiceId: invoice.id,
+      meterReadingId: reading.id,
+      type: "electricity",
+      description: invoiceItem.description,
+      quantity: invoiceItem.quantity,
+      unitPriceSatang: toSatang(invoiceItem.unitPrice),
+      amountSatang: toSatang(invoiceItem.amount),
+    });
+  }
+
+  revalidatePath("/");
+  return { ok: true, message: "บันทึกเลขมิเตอร์แล้ว" };
+}
+
+export async function createInvoiceForUnitAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  let tenantId = textValue(formData, "tenantId");
+  const unitId = textValue(formData, "unitId");
+  const billingCycleId = textValue(formData, "billingCycleId");
+  const type: InvoiceType =
+    textValue(formData, "type") === "electricity" ? "electricity" : "rent";
+  const description = textValue(formData, "description");
+  const quantity = Math.max(numberValue(formData, "quantity"), 1);
+  const unitPrice =
+    numberValue(formData, "unitPrice") || numberValue(formData, "rentAmount");
+  const discount = numberValue(formData, "discount");
+  const vatEnabled = booleanValue(formData, "vatEnabled");
+  const dueDate = textValue(formData, "dueDate");
+
+  const db = getDb();
+  const organizationId = await getDefaultOrganizationId();
+
+  if (!tenantId && unitId) {
+    const [unit] = await db
+      .select({ tenantId: rentalUnits.tenantId })
+      .from(rentalUnits)
+      .where(eq(rentalUnits.id, unitId))
+      .limit(1);
+    tenantId = unit?.tenantId ?? "";
+  }
+
+  if (!tenantId || !billingCycleId || !description || !dueDate) {
+    return { ok: false, message: "ข้อมูลใบแจ้งหนี้ไม่ครบ" };
+  }
+
+  const item = {
+    id: "new",
+    type,
+    description,
+    quantity,
+    unitPrice,
+    amount: quantity * unitPrice,
+  };
+  const totals = calculateInvoiceTotals({
+    items: [item],
+    discount,
+    vatEnabled,
+  });
+  const invoiceNo = nextRunningNo(
+    `INV-${new Date().getFullYear() + 543}${String(new Date().getMonth() + 1).padStart(2, "0")}`,
+    Number(
+      (
+        await db
+          .select({ count: sql<number>`count(*)` })
+          .from(invoices)
+          .where(eq(invoices.organizationId, organizationId))
+      )[0]?.count ?? 0,
+    ),
+  );
+
+  const [invoice] = await db
+    .insert(invoices)
+    .values({
+      organizationId,
+      tenantId,
+      billingCycleId,
+      invoiceNo,
+      type,
+      issueDate: new Date(),
+      dueDate: new Date(dueDate),
+      subtotalSatang: toSatang(totals.subtotal),
+      discountSatang: toSatang(totals.discount),
+      vatRateBasisPoints: totals.vatRate * 100,
+      vatEnabled,
+      vatAmountSatang: toSatang(totals.vatAmount),
+      totalSatang: toSatang(totals.total),
+      balanceSatang: toSatang(totals.balance),
+      status: "issued",
+    })
+    .returning({ id: invoices.id });
+
+  await db.insert(invoiceItems).values({
+    invoiceId: invoice.id,
+    type,
+    description,
+    quantity,
+    unitPriceSatang: toSatang(unitPrice),
+    amountSatang: toSatang(item.amount),
+  });
+
+  revalidatePath("/");
+  return { ok: true, message: "ออกใบแจ้งหนี้แล้ว" };
+}
+
+export async function recordPaymentAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const invoiceId = textValue(formData, "invoiceId");
+  const amount = numberValue(formData, "amount");
+  const paidAt = textValue(formData, "paidAt");
+
+  if (!invoiceId || amount <= 0 || !paidAt) {
+    return { ok: false, message: "ข้อมูลการชำระเงินไม่ครบ" };
+  }
+
+  const db = getDb();
+  const organizationId = await getDefaultOrganizationId();
+  const [invoice] = await db
+    .select()
+    .from(invoices)
+    .where(eq(invoices.id, invoiceId))
+    .limit(1);
+
+  if (!invoice) {
+    return { ok: false, message: "ไม่พบใบแจ้งหนี้" };
+  }
+
+  const [countRow] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(payments)
+    .where(eq(payments.organizationId, organizationId));
+  const receiptNo = nextRunningNo(
+    `RCPT-${new Date().getFullYear() + 543}${String(new Date().getMonth() + 1).padStart(2, "0")}`,
+    Number(countRow?.count ?? 0),
+  );
+  const paidSatang = invoice.paidSatang + toSatang(amount);
+  const total = invoice.totalSatang / 100;
+  const status = deriveInvoiceStatus({
+    total,
+    paid: paidSatang / 100,
+    dueDate: invoice.dueDate.toISOString(),
+    issued: true,
+  });
+
+  await db.insert(payments).values({
+    organizationId,
+    invoiceId,
+    receiptNo,
+    paidAt: new Date(paidAt),
+    amountSatang: toSatang(amount),
+    method: ["cash", "bank_transfer", "promptpay", "other"].includes(
+      textValue(formData, "method"),
+    )
+      ? (textValue(formData, "method") as "cash" | "bank_transfer" | "promptpay" | "other")
+      : "bank_transfer",
+    reference: textValue(formData, "reference"),
+    notes: textValue(formData, "notes"),
+  });
+
+  await db
+    .update(invoices)
+    .set({
+      paidSatang,
+      balanceSatang: Math.max(invoice.totalSatang - paidSatang, 0),
+      status,
+      updatedAt: new Date(),
+    })
+    .where(eq(invoices.id, invoiceId));
+
+  revalidatePath("/");
+  return { ok: true, message: "บันทึกชำระเงินแล้ว" };
+}
