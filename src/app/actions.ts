@@ -1,6 +1,6 @@
 "use server";
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getDb, hasDatabase } from "@/db";
@@ -14,6 +14,7 @@ import {
   rentalUnits,
   tenants,
 } from "@/db/schema";
+import { requireAppUser, type AuthResult } from "@/lib/auth";
 import {
   calculateElectricityCharge,
   calculateInvoiceTotals,
@@ -21,7 +22,7 @@ import {
   nextRunningNo,
   toSatang,
 } from "@/lib/billing";
-import type { InvoiceType } from "@/lib/types";
+import type { InvoiceItem, InvoiceType } from "@/lib/types";
 
 type ActionResult = {
   ok: boolean;
@@ -38,6 +39,19 @@ function numberValue(formData: FormData, key: string) {
 
 function booleanValue(formData: FormData, key: string) {
   return ["on", "yes", "true", "1"].includes(textValue(formData, key));
+}
+
+type ActionFailure = { ok: false; message: string };
+type StaffActionAuth = Extract<AuthResult, { ok: true }> | ActionFailure;
+
+async function requireStaffAction(): Promise<StaffActionAuth> {
+  const user = await requireAppUser();
+
+  if (!user.ok) {
+    return { ok: false, message: user.message };
+  }
+
+  return user;
 }
 
 async function getDefaultOrganizationId() {
@@ -67,6 +81,14 @@ function requireDatabase(): ActionResult | null {
   };
 }
 
+function invoicePrefixFromDate(value: Date) {
+  return `INV-${value.getFullYear() + 543}${String(value.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function toDateValue(value: string) {
+  return new Date(`${value}T00:00:00`);
+}
+
 const tenantSchema = z.object({
   code: z.string().min(1),
   name: z.string().min(1),
@@ -82,6 +104,9 @@ export async function createTenantAction(
   _previousState: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
   const databaseError = requireDatabase();
   if (databaseError) return databaseError;
 
@@ -125,6 +150,9 @@ export async function createUnitAction(
   _previousState: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
   const databaseError = requireDatabase();
   if (databaseError) return databaseError;
 
@@ -159,6 +187,122 @@ export async function createUnitAction(
   return { ok: true, message: "เพิ่มพื้นที่เช่าแล้ว" };
 }
 
+const cycleSchema = z.object({
+  label: z.string().min(1),
+  periodStart: z.string().min(1),
+  periodEnd: z.string().min(1),
+  dueDate: z.string().min(1),
+  status: z.enum(["draft", "open", "closed"]),
+  closeCurrentCycleId: z.string().uuid().optional().or(z.literal("")),
+});
+
+export async function createBillingCycleAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const parsed = cycleSchema.safeParse({
+    label: textValue(formData, "label"),
+    periodStart: textValue(formData, "periodStart"),
+    periodEnd: textValue(formData, "periodEnd"),
+    dueDate: textValue(formData, "dueDate"),
+    status: textValue(formData, "status") || "open",
+    closeCurrentCycleId: textValue(formData, "closeCurrentCycleId"),
+  });
+
+  if (!parsed.success) {
+    return { ok: false, message: "ข้อมูลรอบบิลไม่ครบ" };
+  }
+
+  const db = getDb();
+  const organizationId = await getDefaultOrganizationId();
+
+  if (parsed.data.status === "open") {
+    await db
+      .update(billingCycles)
+      .set({ status: "closed" })
+      .where(
+        and(
+          eq(billingCycles.organizationId, organizationId),
+          eq(billingCycles.status, "open"),
+        ),
+      );
+  }
+
+  await db.insert(billingCycles).values({
+    organizationId,
+    label: parsed.data.label,
+    periodStart: toDateValue(parsed.data.periodStart),
+    periodEnd: toDateValue(parsed.data.periodEnd),
+    dueDate: toDateValue(parsed.data.dueDate),
+    status: parsed.data.status,
+  });
+
+  if (parsed.data.closeCurrentCycleId) {
+    await db
+      .update(billingCycles)
+      .set({ status: "closed" })
+      .where(eq(billingCycles.id, parsed.data.closeCurrentCycleId));
+  }
+
+  revalidatePath("/");
+  return { ok: true, message: "สร้างรอบบิลแล้ว" };
+}
+
+export async function updateBillingCycleStatusAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const cycleId = textValue(formData, "cycleId");
+  const status = textValue(formData, "status");
+
+  if (
+    !cycleId ||
+    !["draft", "open", "closed"].includes(status)
+  ) {
+    return { ok: false, message: "ข้อมูลรอบบิลไม่ครบ" };
+  }
+
+  const db = getDb();
+  const organizationId = await getDefaultOrganizationId();
+
+  if (status === "open") {
+    await db
+      .update(billingCycles)
+      .set({ status: "closed" })
+      .where(
+        and(
+          eq(billingCycles.organizationId, organizationId),
+          eq(billingCycles.status, "open"),
+        ),
+      );
+  }
+
+  await db
+    .update(billingCycles)
+    .set({ status: status as "draft" | "open" | "closed" })
+    .where(
+      and(
+        eq(billingCycles.organizationId, organizationId),
+        eq(billingCycles.id, cycleId),
+      ),
+    );
+
+  revalidatePath("/");
+  return { ok: true, message: "อัปเดตรอบบิลแล้ว" };
+}
+
 const meterSchema = z.object({
   unitId: z.string().uuid(),
   tenantId: z.string().uuid().optional().or(z.literal("")),
@@ -178,6 +322,9 @@ export async function recordMeterReadingAction(
   _previousState: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
   const databaseError = requireDatabase();
   if (databaseError) return databaseError;
 
@@ -235,6 +382,7 @@ export async function recordMeterReadingAction(
     imageWidth: parsed.data.imageWidth,
     imageHeight: parsed.data.imageHeight,
     warning: warning ?? "",
+    createdByUserId: user.appUserId,
   }).returning({ id: meterReadings.id });
 
   if (booleanValue(formData, "createInvoice")) {
@@ -264,7 +412,7 @@ export async function recordMeterReadingAction(
       vatRate: 7,
     });
     const invoiceNo = nextRunningNo(
-      `INV-${new Date().getFullYear() + 543}${String(new Date().getMonth() + 1).padStart(2, "0")}`,
+      invoicePrefixFromDate(new Date()),
       Number(countRow?.count ?? 0),
     );
     const [invoice] = await db
@@ -308,6 +456,9 @@ export async function createInvoiceForUnitAction(
   _previousState: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
   const databaseError = requireDatabase();
   if (databaseError) return databaseError;
 
@@ -354,7 +505,7 @@ export async function createInvoiceForUnitAction(
     vatEnabled,
   });
   const invoiceNo = nextRunningNo(
-    `INV-${new Date().getFullYear() + 543}${String(new Date().getMonth() + 1).padStart(2, "0")}`,
+    invoicePrefixFromDate(new Date()),
     Number(
       (
         await db
@@ -399,10 +550,229 @@ export async function createInvoiceForUnitAction(
   return { ok: true, message: "ออกใบแจ้งหนี้แล้ว" };
 }
 
+export async function generateBatchInvoicesAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const billingCycleId = textValue(formData, "billingCycleId");
+
+  if (!billingCycleId) {
+    return { ok: false, message: "ยังไม่ได้เลือกรอบบิล" };
+  }
+
+  const db = getDb();
+  const organizationId = await getDefaultOrganizationId();
+  const [organization] = await db
+    .select()
+    .from(organizations)
+    .where(eq(organizations.id, organizationId))
+    .limit(1);
+  const [cycle] = await db
+    .select()
+    .from(billingCycles)
+    .where(
+      and(
+        eq(billingCycles.organizationId, organizationId),
+        eq(billingCycles.id, billingCycleId),
+      ),
+    )
+    .limit(1);
+
+  if (!cycle) {
+    return { ok: false, message: "ไม่พบรอบบิลนี้" };
+  }
+
+  if (cycle.status === "closed") {
+    return { ok: false, message: "รอบบิลนี้ปิดแล้ว" };
+  }
+
+  const [
+    unitRows,
+    tenantRows,
+    readingRows,
+    existingInvoiceRows,
+    countRow,
+  ] = await Promise.all([
+    db
+      .select()
+      .from(rentalUnits)
+      .where(
+        and(
+          eq(rentalUnits.organizationId, organizationId),
+          eq(rentalUnits.status, "occupied"),
+        ),
+      ),
+    db.select().from(tenants).where(eq(tenants.organizationId, organizationId)),
+    db
+      .select()
+      .from(meterReadings)
+      .where(
+        and(
+          eq(meterReadings.organizationId, organizationId),
+          eq(meterReadings.billingCycleId, billingCycleId),
+        ),
+      ),
+    db
+      .select()
+      .from(invoices)
+      .where(
+        and(
+          eq(invoices.organizationId, organizationId),
+          eq(invoices.billingCycleId, billingCycleId),
+        ),
+      ),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(invoices)
+      .where(eq(invoices.organizationId, organizationId)),
+  ]);
+
+  const tenantsById = new Map(tenantRows.map((tenant) => [tenant.id, tenant]));
+  const latestReadingByUnit = new Map<string, (typeof readingRows)[number]>();
+  const invoicedTenantIds = new Set(
+    existingInvoiceRows.map((invoice) => invoice.tenantId),
+  );
+  let skippedExisting = 0;
+  let skippedNoTenant = 0;
+  let missingMeter = 0;
+  let createdCount = 0;
+  let runningCount = Number(countRow?.[0]?.count ?? 0);
+  const prefix = invoicePrefixFromDate(cycle.periodStart);
+
+  for (const reading of readingRows) {
+    const current = latestReadingByUnit.get(reading.unitId);
+
+    if (
+      !current ||
+      reading.capturedAt.getTime() > current.capturedAt.getTime()
+    ) {
+      latestReadingByUnit.set(reading.unitId, reading);
+    }
+  }
+
+  for (const unit of unitRows) {
+    if (!unit.tenantId) {
+      skippedNoTenant += 1;
+      continue;
+    }
+
+    if (invoicedTenantIds.has(unit.tenantId)) {
+      skippedExisting += 1;
+      continue;
+    }
+
+    const tenant = tenantsById.get(unit.tenantId);
+
+    if (!tenant) {
+      skippedNoTenant += 1;
+      continue;
+    }
+
+    const reading = latestReadingByUnit.get(unit.id);
+    const items: InvoiceItem[] = [
+      {
+        id: "rent",
+        type: "rent",
+        description: `ค่าเช่าพื้นที่ ${unit.code} รอบ ${cycle.label}`,
+        quantity: 1,
+        unitPrice: unit.rentAmountSatang / 100,
+        amount: unit.rentAmountSatang / 100,
+      },
+    ];
+
+    if (reading) {
+      items.push({
+        id: "electric",
+        type: "electricity",
+        description: `ค่าไฟพื้นที่ ${unit.code} ${reading.usageUnits} หน่วย`,
+        quantity: reading.usageUnits,
+        unitPrice: reading.rateSatang / 100,
+        amount: reading.amountSatang / 100,
+        meterReadingId: reading.id,
+      });
+    } else {
+      missingMeter += 1;
+    }
+
+    const totals = calculateInvoiceTotals({
+      items,
+      vatEnabled: tenant.vatEnabled,
+      vatRate: (organization?.vatRateBasisPoints ?? 700) / 100,
+    });
+
+    if (totals.total <= 0) {
+      skippedNoTenant += 1;
+      continue;
+    }
+
+    const invoiceNo = nextRunningNo(prefix, runningCount);
+    runningCount += 1;
+
+    const [invoice] = await db
+      .insert(invoices)
+      .values({
+        organizationId,
+        tenantId: tenant.id,
+        billingCycleId,
+        invoiceNo,
+        type: reading ? "mixed" : "rent",
+        issueDate: new Date(),
+        dueDate: cycle.dueDate,
+        subtotalSatang: toSatang(totals.subtotal),
+        discountSatang: 0,
+        vatRateBasisPoints: Math.round(totals.vatRate * 100),
+        vatEnabled: tenant.vatEnabled,
+        vatAmountSatang: toSatang(totals.vatAmount),
+        totalSatang: toSatang(totals.total),
+        balanceSatang: toSatang(totals.balance),
+        status: "issued",
+      })
+      .returning({ id: invoices.id });
+
+    await db.insert(invoiceItems).values(
+      items.map((item) => ({
+        invoiceId: invoice.id,
+        meterReadingId: item.meterReadingId,
+        type: item.type,
+        description: item.description,
+        quantity: item.quantity,
+        unitPriceSatang: toSatang(item.unitPrice),
+        amountSatang: toSatang(item.amount),
+      })),
+    );
+
+    invoicedTenantIds.add(tenant.id);
+    createdCount += 1;
+  }
+
+  revalidatePath("/");
+
+  if (!createdCount) {
+    return {
+      ok: false,
+      message: "ยังไม่มีรายการที่สร้างได้ในรอบบิลนี้",
+    };
+  }
+
+  return {
+    ok: true,
+    message: `สร้างใบแจ้งหนี้ ${createdCount} ใบ ข้ามซ้ำ ${skippedExisting} ห้อง ไม่มีผู้เช่า ${skippedNoTenant} ห้อง ไม่มีเลขไฟ ${missingMeter} ห้อง`,
+  };
+}
+
 export async function recordPaymentAction(
   _previousState: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
   const databaseError = requireDatabase();
   if (databaseError) return databaseError;
 
@@ -456,6 +826,7 @@ export async function recordPaymentAction(
       : "bank_transfer",
     reference: textValue(formData, "reference"),
     notes: textValue(formData, "notes"),
+    createdByUserId: user.appUserId,
   });
 
   await db

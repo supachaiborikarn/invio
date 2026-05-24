@@ -9,8 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:migrate": "set -a; . .env.local; set +a; drizzle-kit migrate",
+    "db:studio": "set -a; . .env.local; set +a; drizzle-kit studio"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.4.1",

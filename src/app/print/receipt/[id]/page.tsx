@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { PrintToolbar } from "@/components/print-toolbar";
+import { requireAppUser } from "@/lib/auth";
 import { formatCurrency, formatDate } from "@/lib/billing";
 import { getReceiptDocument } from "@/lib/dashboard-data";
 
@@ -10,6 +11,10 @@ export default async function ReceiptPrintPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const user = await requireAppUser();
+
+  if (!user.ok) notFound();
+
   const { id } = await params;
   const { data, payment, invoice, tenant } = await getReceiptDocument(id);
 

@@ -7,26 +7,33 @@ import {
   Banknote,
   Bolt,
   Building2,
+  CalendarDays,
+  CalendarPlus,
   CheckCircle2,
   CircleDollarSign,
   FileText,
   Gauge,
   ImageUp,
+  Layers,
   Plus,
   Printer,
   ReceiptText,
   Search,
   Settings,
+  Sparkles,
   Upload,
   Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import {
+  createBillingCycleAction,
   createInvoiceForUnitAction,
   createTenantAction,
+  generateBatchInvoicesAction,
   recordMeterReadingAction,
   recordPaymentAction,
+  updateBillingCycleStatusAction,
 } from "@/app/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -81,6 +88,7 @@ import {
 } from "@/lib/billing";
 import type {
   DashboardData,
+  BillingCycle,
   Invoice,
   InvoiceItem,
   MeterReading,
@@ -124,6 +132,18 @@ const methodText: Record<Payment["method"], string> = {
   other: "อื่น ๆ",
 };
 
+const cycleStatusText: Record<BillingCycle["status"], string> = {
+  draft: "ร่าง",
+  open: "เปิดใช้งาน",
+  closed: "ปิดแล้ว",
+};
+
+const cycleStatusClass: Record<BillingCycle["status"], string> = {
+  draft: "bg-muted text-muted-foreground",
+  open: "bg-[var(--tone-ok-soft)] text-[var(--tone-ok)]",
+  closed: "bg-muted text-muted-foreground",
+};
+
 function field(form: HTMLFormElement, name: string) {
   return String(new FormData(form).get(name) ?? "").trim();
 }
@@ -134,6 +154,31 @@ function amountField(form: HTMLFormElement, name: string) {
 
 function today() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function dateInputValue(value: Date) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function addMonths(value: Date, months: number) {
+  const next = new Date(value);
+  next.setMonth(next.getMonth() + months);
+  return next;
+}
+
+function endOfMonth(value: Date) {
+  return new Date(value.getFullYear(), value.getMonth() + 1, 0);
+}
+
+function cycleLabel(value: Date) {
+  return new Intl.DateTimeFormat("th-TH", {
+    month: "long",
+    year: "numeric",
+  }).format(value);
 }
 
 function createId(prefix: string) {
@@ -179,14 +224,55 @@ export function BillingWorkspace({
   const [meterOpen, setMeterOpen] = useState(false);
   const [rentOpen, setRentOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [cycleOpen, setCycleOpen] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [uploadMessage, setUploadMessage] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const router = useRouter();
 
-  const activeCycle = data.cycles[0];
+  const sortedCycles = useMemo(
+    () =>
+      [...data.cycles].sort(
+        (a, b) =>
+          new Date(b.periodStart).getTime() -
+          new Date(a.periodStart).getTime(),
+      ),
+    [data.cycles],
+  );
+  const defaultCycleId =
+    sortedCycles.find((cycle) => cycle.status === "open")?.id ??
+    sortedCycles[0]?.id ??
+    "";
+  const [selectedCycleId, setSelectedCycleId] = useState(defaultCycleId);
+  const activeCycle =
+    data.cycles.find((cycle) => cycle.id === selectedCycleId) ??
+    data.cycles.find((cycle) => cycle.id === defaultCycleId) ??
+    null;
   const tabTriggerClass = "h-8 min-w-0 px-2 text-xs sm:text-sm";
+  const cycleInvoices = useMemo(
+    () =>
+      activeCycle
+        ? data.invoices.filter((invoice) => invoice.cycleId === activeCycle.id)
+        : [],
+    [activeCycle, data.invoices],
+  );
+  const cycleReadings = useMemo(
+    () =>
+      activeCycle
+        ? data.meterReadings.filter(
+            (reading) => reading.cycleId === activeCycle.id,
+          )
+        : [],
+    [activeCycle, data.meterReadings],
+  );
+  const cyclePayments = useMemo(
+    () =>
+      data.payments.filter((payment) =>
+        cycleInvoices.some((invoice) => invoice.id === payment.invoiceId),
+      ),
+    [cycleInvoices, data.payments],
+  );
 
   const filteredTenants = useMemo(() => {
     const query = search.toLowerCase();
@@ -201,18 +287,18 @@ export function BillingWorkspace({
   }, [data.tenants, search]);
 
   const totals = useMemo(() => {
-    const openInvoices = data.invoices.filter((invoice) =>
+    const openInvoices = cycleInvoices.filter((invoice) =>
       ["issued", "partial", "overdue"].includes(invoice.status),
     );
     const outstanding = openInvoices.reduce(
       (sum, invoice) => sum + invoice.balance,
       0,
     );
-    const paidThisCycle = data.payments.reduce(
+    const paidThisCycle = cyclePayments.reduce(
       (sum, payment) => sum + payment.amount,
       0,
     );
-    const electricUsage = data.meterReadings.reduce(
+    const electricUsage = cycleReadings.reduce(
       (sum, reading) => sum + reading.usageUnits,
       0,
     );
@@ -223,7 +309,7 @@ export function BillingWorkspace({
       electricUsage,
       openInvoiceCount: openInvoices.length,
     };
-  }, [data.invoices, data.meterReadings, data.payments]);
+  }, [cycleInvoices, cyclePayments, cycleReadings]);
 
   async function uploadMeterImage(file: File): Promise<UploadResult> {
     if (!data.cloudinaryConfigured) {
@@ -361,6 +447,11 @@ export function BillingWorkspace({
     event.preventDefault();
     const form = event.currentTarget;
 
+    if (!activeCycle) {
+      setActionMessage("ต้องสร้างรอบบิลก่อนออกใบแจ้งหนี้");
+      return;
+    }
+
     if (data.databaseConfigured) {
       const result = await createInvoiceForUnitAction(
         { ok: false, message: "" },
@@ -421,6 +512,11 @@ export function BillingWorkspace({
   async function handleMeterSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
+
+    if (!activeCycle) {
+      setActionMessage("ต้องสร้างรอบบิลก่อนบันทึกมิเตอร์");
+      return;
+    }
 
     if (data.databaseConfigured) {
       const result = await recordMeterReadingAction(
@@ -545,6 +641,227 @@ export function BillingWorkspace({
     setPaymentOpen(false);
   }
 
+  async function handleCycleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+
+    if (data.databaseConfigured) {
+      const result = await createBillingCycleAction(
+        { ok: false, message: "" },
+        new FormData(form),
+      );
+      setActionMessage(result.message);
+      if (result.ok) {
+        form.reset();
+        setCycleOpen(false);
+        router.refresh();
+      }
+      return;
+    }
+
+    const periodStart = field(form, "periodStart");
+    const periodEnd = field(form, "periodEnd");
+    const dueDate = field(form, "dueDate");
+    const status = (field(form, "status") || "open") as BillingCycle["status"];
+
+    if (!periodStart || !periodEnd || !dueDate) return;
+
+    const cycle: BillingCycle = {
+      id: createId("cycle"),
+      label: field(form, "label") || cycleLabel(new Date(periodStart)),
+      periodStart: new Date(periodStart).toISOString(),
+      periodEnd: new Date(periodEnd).toISOString(),
+      dueDate: new Date(dueDate).toISOString(),
+      status,
+    };
+
+    setData((current) => ({
+      ...current,
+      cycles: [
+        cycle,
+        ...current.cycles.map((item) =>
+          status === "open" && item.status === "open"
+            ? { ...item, status: "closed" as const }
+            : item,
+        ),
+      ],
+    }));
+    setSelectedCycleId(cycle.id);
+    form.reset();
+    setCycleOpen(false);
+  }
+
+  async function handleCycleStatusChange(
+    cycleId: string,
+    status: BillingCycle["status"],
+  ) {
+    const formData = new FormData();
+    formData.set("cycleId", cycleId);
+    formData.set("status", status);
+
+    if (data.databaseConfigured) {
+      const result = await updateBillingCycleStatusAction(
+        { ok: false, message: "" },
+        formData,
+      );
+      setActionMessage(result.message);
+      if (result.ok) {
+        if (status === "open") setSelectedCycleId(cycleId);
+        router.refresh();
+      }
+      return;
+    }
+
+    setData((current) => ({
+      ...current,
+      cycles: current.cycles.map((cycle) => {
+        if (cycle.id === cycleId) return { ...cycle, status };
+        if (status === "open" && cycle.status === "open") {
+          return { ...cycle, status: "closed" };
+        }
+        return cycle;
+      }),
+    }));
+    if (status === "open") setSelectedCycleId(cycleId);
+    setActionMessage("อัปเดตรอบบิลแล้ว");
+  }
+
+  async function handleBatchInvoices() {
+    if (!activeCycle) {
+      setActionMessage("ต้องสร้างรอบบิลก่อนสร้างใบแจ้งหนี้ยกชุด");
+      return;
+    }
+
+    if (data.databaseConfigured) {
+      const formData = new FormData();
+      formData.set("billingCycleId", activeCycle.id);
+      const result = await generateBatchInvoicesAction(
+        { ok: false, message: "" },
+        formData,
+      );
+      setActionMessage(result.message);
+      if (result.ok) router.refresh();
+      return;
+    }
+
+    let createdCount = 0;
+    let skippedExisting = 0;
+    let skippedNoTenant = 0;
+    let missingMeter = 0;
+
+    setData((current) => {
+      const cycle = current.cycles.find((item) => item.id === activeCycle.id);
+      if (!cycle || cycle.status === "closed") return current;
+
+      const existingTenantIds = new Set(
+        current.invoices
+          .filter((invoice) => invoice.cycleId === cycle.id)
+          .map((invoice) => invoice.tenantId),
+      );
+      const latestReadingByUnit = new Map<string, MeterReading>();
+
+      for (const reading of current.meterReadings.filter(
+        (item) => item.cycleId === cycle.id,
+      )) {
+        const existing = latestReadingByUnit.get(reading.unitId);
+        if (
+          !existing ||
+          new Date(reading.capturedAt).getTime() >
+            new Date(existing.capturedAt).getTime()
+        ) {
+          latestReadingByUnit.set(reading.unitId, reading);
+        }
+      }
+
+      const prefix = `INV-${new Date(cycle.periodStart).getFullYear() + 543}${String(new Date(cycle.periodStart).getMonth() + 1).padStart(2, "0")}`;
+      const newInvoices: Invoice[] = [];
+
+      for (const unit of current.units.filter(
+        (item) => item.status === "occupied",
+      )) {
+        if (!unit.tenantId) {
+          skippedNoTenant += 1;
+          continue;
+        }
+
+        if (existingTenantIds.has(unit.tenantId)) {
+          skippedExisting += 1;
+          continue;
+        }
+
+        const tenant = getTenant(current, unit.tenantId);
+        if (!tenant) {
+          skippedNoTenant += 1;
+          continue;
+        }
+
+        const reading = latestReadingByUnit.get(unit.id);
+        const items: InvoiceItem[] = [
+          {
+            id: createId("item"),
+            type: "rent",
+            description: `ค่าเช่าพื้นที่ ${unit.code} รอบ ${cycle.label}`,
+            quantity: 1,
+            unitPrice: unit.rentAmount,
+            amount: unit.rentAmount,
+          },
+        ];
+
+        if (reading) {
+          items.push({
+            id: createId("item"),
+            type: "electricity",
+            description: `ค่าไฟพื้นที่ ${unit.code} ${formatNumber(reading.usageUnits)} หน่วย`,
+            quantity: reading.usageUnits,
+            unitPrice: reading.rate,
+            amount: reading.amount,
+            meterReadingId: reading.id,
+          });
+        } else {
+          missingMeter += 1;
+        }
+
+        const totalsForInvoice = calculateInvoiceTotals({
+          items,
+          vatEnabled: tenant.vatEnabled,
+          vatRate: current.organization.vatRate,
+        });
+
+        if (totalsForInvoice.total <= 0) continue;
+
+        newInvoices.push({
+          id: createId("invoice"),
+          tenantId: tenant.id,
+          cycleId: cycle.id,
+          invoiceNo: nextRunningNo(
+            prefix,
+            current.invoices.length + newInvoices.length,
+          ),
+          type: reading ? "mixed" : "rent",
+          issueDate: today(),
+          dueDate: cycle.dueDate,
+          items,
+          vatEnabled: tenant.vatEnabled,
+          status: "issued",
+          ...totalsForInvoice,
+        });
+        existingTenantIds.add(tenant.id);
+        createdCount += 1;
+      }
+
+      return {
+        ...current,
+        invoices: [...newInvoices, ...current.invoices],
+      };
+    });
+
+    setActionMessage(
+      createdCount
+        ? `สร้างใบแจ้งหนี้ ${createdCount} ใบ ข้ามซ้ำ ${skippedExisting} ห้อง ไม่มีผู้เช่า ${skippedNoTenant} ห้อง ไม่มีเลขไฟ ${missingMeter} ห้อง`
+        : "ยังไม่มีรายการที่สร้างได้ในรอบบิลนี้",
+    );
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto grid min-h-screen w-full max-w-[1480px] grid-cols-1 md:grid-cols-[248px_minmax(0,1fr)]">
@@ -566,6 +883,7 @@ export function BillingWorkspace({
           <nav className="mt-6 grid grid-cols-3 gap-2 md:grid-cols-1">
             {[
               ["ภาพรวม", FileText],
+              ["รอบบิล", CalendarDays],
               ["ผู้เช่า", Users],
               ["มิเตอร์", Gauge],
               ["ใบแจ้งหนี้", ReceiptText],
@@ -597,42 +915,84 @@ export function BillingWorkspace({
           <header className="flex flex-col gap-4 border-b border-border pb-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <p className="text-sm text-muted-foreground">
-                รอบบิล {activeCycle.label}
+                รอบบิล {activeCycle?.label ?? "ยังไม่ได้สร้าง"}
               </p>
               <h1 className="mt-1 text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
                 จัดการใบแจ้งหนี้ผู้เช่า
               </h1>
+              <div className="mt-3 w-full max-w-xs">
+                <Select
+                  value={activeCycle?.id ?? ""}
+                  onValueChange={setSelectedCycleId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกรอบบิล" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sortedCycles.map((cycle) => (
+                      <SelectItem key={cycle.id} value={cycle.id}>
+                        {cycle.label} · {cycleStatusText[cycle.status]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
+              <Dialog open={cycleOpen} onOpenChange={setCycleOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <CalendarPlus className="size-4" />
+                    รอบบิลใหม่
+                  </Button>
+                </DialogTrigger>
+                <CycleDialog
+                  data={data}
+                  activeCycle={activeCycle}
+                  onSubmit={handleCycleSubmit}
+                />
+              </Dialog>
+              <Button
+                variant="outline"
+                onClick={handleBatchInvoices}
+                disabled={!activeCycle || activeCycle.status === "closed"}
+              >
+                <Sparkles className="size-4" />
+                สร้างบิลยกชุด
+              </Button>
               <Dialog open={meterOpen} onOpenChange={setMeterOpen}>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button disabled={!activeCycle}>
                     <ImageUp className="size-4" />
                     บันทึกมิเตอร์
                   </Button>
                 </DialogTrigger>
-                <MeterDialog
-                  data={data}
-                  activeCycleId={activeCycle.id}
-                  isUploading={isUploading}
-                  uploadMessage={uploadMessage}
-                  uploadResult={uploadResult}
-                  onFileChange={handleUpload}
-                  onSubmit={handleMeterSubmit}
-                />
+                {activeCycle ? (
+                  <MeterDialog
+                    data={data}
+                    activeCycleId={activeCycle.id}
+                    isUploading={isUploading}
+                    uploadMessage={uploadMessage}
+                    uploadResult={uploadResult}
+                    onFileChange={handleUpload}
+                    onSubmit={handleMeterSubmit}
+                  />
+                ) : null}
               </Dialog>
               <Dialog open={rentOpen} onOpenChange={setRentOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline">
+                  <Button variant="outline" disabled={!activeCycle}>
                     <Plus className="size-4" />
                     ใบค่าเช่า
                   </Button>
                 </DialogTrigger>
-                <RentInvoiceDialog
-                  data={data}
-                  activeCycle={activeCycle}
-                  onSubmit={handleRentInvoiceSubmit}
-                />
+                {activeCycle ? (
+                  <RentInvoiceDialog
+                    data={data}
+                    activeCycle={activeCycle}
+                    onSubmit={handleRentInvoiceSubmit}
+                  />
+                ) : null}
               </Dialog>
               <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
                 <DialogTrigger asChild>
@@ -681,9 +1041,12 @@ export function BillingWorkspace({
           ) : null}
 
           <Tabs defaultValue="overview" className="mt-5">
-            <TabsList className="!grid !h-auto w-full grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-6">
+            <TabsList className="!grid !h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-7">
               <TabsTrigger className={tabTriggerClass} value="overview">
                 ภาพรวม
+              </TabsTrigger>
+              <TabsTrigger className={tabTriggerClass} value="cycles">
+                รอบบิล
               </TabsTrigger>
               <TabsTrigger className={tabTriggerClass} value="tenants">
                 ผู้เช่า
@@ -703,7 +1066,18 @@ export function BillingWorkspace({
             </TabsList>
 
             <TabsContent value="overview" id="ภาพรวม" className="mt-4">
-              <OverviewPanel data={data} />
+              <OverviewPanel data={data} cycleId={activeCycle?.id ?? ""} />
+            </TabsContent>
+
+            <TabsContent value="cycles" id="รอบบิล" className="mt-4">
+              <CyclePanel
+                data={data}
+                activeCycle={activeCycle}
+                selectedCycleId={activeCycle?.id ?? ""}
+                onSelectCycle={setSelectedCycleId}
+                onStatusChange={handleCycleStatusChange}
+                onBatchInvoices={handleBatchInvoices}
+              />
             </TabsContent>
 
             <TabsContent value="tenants" id="ผู้เช่า" className="mt-4">
@@ -731,15 +1105,15 @@ export function BillingWorkspace({
             </TabsContent>
 
             <TabsContent value="meters" id="มิเตอร์" className="mt-4">
-              <MeterList data={data} />
+              <MeterList data={data} cycleId={activeCycle?.id ?? ""} />
             </TabsContent>
 
             <TabsContent value="invoices" id="ใบแจ้งหนี้" className="mt-4">
-              <InvoiceList data={data} />
+              <InvoiceList data={data} cycleId={activeCycle?.id ?? ""} />
             </TabsContent>
 
             <TabsContent value="payments" id="ชำระเงิน" className="mt-4">
-              <PaymentList data={data} />
+              <PaymentList data={data} cycleId={activeCycle?.id ?? ""} />
             </TabsContent>
 
             <TabsContent value="settings" id="ตั้งค่า" className="mt-4">
@@ -855,16 +1229,248 @@ function ConfigStrip({ data }: { data: DashboardData }) {
   );
 }
 
-function OverviewPanel({ data }: { data: DashboardData }) {
+function OverviewPanel({
+  data,
+  cycleId,
+}: {
+  data: DashboardData;
+  cycleId: string;
+}) {
   return (
     <section className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
-      <InvoiceList data={data} compact />
+      <InvoiceList data={data} cycleId={cycleId} compact />
       <div className="grid gap-4">
-        <MeterList data={data} compact />
-        <PaymentList data={data} compact />
+        <MeterList data={data} cycleId={cycleId} compact />
+        <PaymentList data={data} cycleId={cycleId} compact />
       </div>
     </section>
   );
+}
+
+function CyclePanel({
+  data,
+  activeCycle,
+  selectedCycleId,
+  onSelectCycle,
+  onStatusChange,
+  onBatchInvoices,
+}: {
+  data: DashboardData;
+  activeCycle: BillingCycle | null;
+  selectedCycleId: string;
+  onSelectCycle: (cycleId: string) => void;
+  onStatusChange: (cycleId: string, status: BillingCycle["status"]) => void;
+  onBatchInvoices: () => void;
+}) {
+  const cycles = [...data.cycles].sort(
+    (a, b) =>
+      new Date(b.periodStart).getTime() - new Date(a.periodStart).getTime(),
+  );
+  const activeSummary = activeCycle
+    ? getCycleBillingSummary(data, activeCycle.id)
+    : null;
+
+  return (
+    <section className="grid gap-4">
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <Card className="rounded-md">
+          <CardHeader>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <CardTitle className="text-base">
+                  {activeCycle?.label ?? "ยังไม่มีรอบบิล"}
+                </CardTitle>
+                <CardDescription>
+                  {activeCycle
+                    ? `${formatDate(activeCycle.periodStart)} - ${formatDate(activeCycle.periodEnd)}`
+                    : "สร้างรอบบิลก่อนเริ่มออกเอกสาร"}
+                </CardDescription>
+              </div>
+              {activeCycle ? (
+                <Badge
+                  className={cn(
+                    "w-fit rounded-sm px-2 py-1",
+                    cycleStatusClass[activeCycle.status],
+                  )}
+                >
+                  {cycleStatusText[activeCycle.status]}
+                </Badge>
+              ) : null}
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-3">
+            <Info
+              label="ใบแจ้งหนี้"
+              value={`${activeSummary?.invoiceCount ?? 0} ใบ`}
+            />
+            <Info
+              label="เลขมิเตอร์"
+              value={`${activeSummary?.readingCount ?? 0} รายการ`}
+            />
+            <Info
+              label="ยอดค้าง"
+              value={formatCurrency(activeSummary?.outstanding ?? 0)}
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Layers className="size-4" />
+              สร้างบิลยกชุด
+            </CardTitle>
+            <CardDescription>
+              {activeCycle?.status === "closed"
+                ? "รอบบิลนี้ปิดแล้ว"
+                : "รวมค่าเช่าและค่าไฟตามเลขที่บันทึก"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            <BatchSummary data={data} cycleId={activeCycle?.id ?? ""} />
+            <Button
+              onClick={onBatchInvoices}
+              disabled={!activeCycle || activeCycle.status === "closed"}
+            >
+              <Sparkles className="size-4" />
+              สร้างใบแจ้งหนี้ยกชุด
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {!cycles.length ? (
+        <EmptyState label="ยังไม่มีรอบบิล" />
+      ) : (
+        <div className="overflow-hidden border border-border bg-card">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>รอบบิล</TableHead>
+                <TableHead>ช่วงวันที่</TableHead>
+                <TableHead>ครบกำหนด</TableHead>
+                <TableHead>สถานะ</TableHead>
+                <TableHead className="text-right">ใบแจ้งหนี้</TableHead>
+                <TableHead className="w-28"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {cycles.map((cycle) => {
+                const summary = getCycleBillingSummary(data, cycle.id);
+                const selected = cycle.id === selectedCycleId;
+
+                return (
+                  <TableRow key={cycle.id}>
+                    <TableCell>
+                      <button
+                        type="button"
+                        onClick={() => onSelectCycle(cycle.id)}
+                        className={cn(
+                          "text-left font-medium underline-offset-4 hover:underline",
+                          selected && "text-primary",
+                        )}
+                      >
+                        {cycle.label}
+                      </button>
+                    </TableCell>
+                    <TableCell>
+                      {formatDate(cycle.periodStart)} -{" "}
+                      {formatDate(cycle.periodEnd)}
+                    </TableCell>
+                    <TableCell>{formatDate(cycle.dueDate)}</TableCell>
+                    <TableCell>
+                      <Badge
+                        className={cn(
+                          "rounded-sm px-2 py-1",
+                          cycleStatusClass[cycle.status],
+                        )}
+                      >
+                        {cycleStatusText[cycle.status]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {summary.invoiceCount}
+                    </TableCell>
+                    <TableCell>
+                      {cycle.status === "open" ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onStatusChange(cycle.id, "closed")}
+                        >
+                          ปิดรอบ
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onStatusChange(cycle.id, "open")}
+                        >
+                          เปิดใช้
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function BatchSummary({
+  data,
+  cycleId,
+}: {
+  data: DashboardData;
+  cycleId: string;
+}) {
+  const occupiedUnits = data.units.filter((unit) => unit.status === "occupied");
+  const existingTenantIds = new Set(
+    data.invoices
+      .filter((invoice) => invoice.cycleId === cycleId)
+      .map((invoice) => invoice.tenantId),
+  );
+  const readingsByUnit = new Set(
+    data.meterReadings
+      .filter((reading) => reading.cycleId === cycleId)
+      .map((reading) => reading.unitId),
+  );
+  const readyUnits = occupiedUnits.filter(
+    (unit) => unit.tenantId && !existingTenantIds.has(unit.tenantId),
+  );
+  const missingMeter = readyUnits.filter(
+    (unit) => !readingsByUnit.has(unit.id),
+  ).length;
+
+  return (
+    <div className="grid grid-cols-3 gap-2 text-sm">
+      <Info label="พร้อมสร้าง" value={`${readyUnits.length} ห้อง`} />
+      <Info label="มีบิลแล้ว" value={`${existingTenantIds.size} ห้อง`} />
+      <Info label="ไม่มีเลขไฟ" value={`${missingMeter} ห้อง`} />
+    </div>
+  );
+}
+
+function getCycleBillingSummary(data: DashboardData, cycleId: string) {
+  const invoices = data.invoices.filter((invoice) => invoice.cycleId === cycleId);
+  const invoiceIds = new Set(invoices.map((invoice) => invoice.id));
+  const payments = data.payments.filter((payment) =>
+    invoiceIds.has(payment.invoiceId),
+  );
+  const readings = data.meterReadings.filter(
+    (reading) => reading.cycleId === cycleId,
+  );
+
+  return {
+    invoiceCount: invoices.length,
+    readingCount: readings.length,
+    paymentCount: payments.length,
+    outstanding: invoices.reduce((sum, invoice) => sum + invoice.balance, 0),
+  };
 }
 
 function TenantList({
@@ -922,12 +1528,17 @@ function TenantList({
 
 function MeterList({
   data,
+  cycleId,
   compact,
 }: {
   data: DashboardData;
+  cycleId?: string;
   compact?: boolean;
 }) {
-  const readings = compact ? data.meterReadings.slice(0, 3) : data.meterReadings;
+  const sourceReadings = cycleId
+    ? data.meterReadings.filter((reading) => reading.cycleId === cycleId)
+    : data.meterReadings;
+  const readings = compact ? sourceReadings.slice(0, 3) : sourceReadings;
 
   if (!readings.length) return <EmptyState label="ยังไม่มีเลขมิเตอร์" />;
 
@@ -1005,12 +1616,17 @@ function MeterList({
 
 function InvoiceList({
   data,
+  cycleId,
   compact,
 }: {
   data: DashboardData;
+  cycleId?: string;
   compact?: boolean;
 }) {
-  const invoices = compact ? data.invoices.slice(0, 5) : data.invoices;
+  const sourceInvoices = cycleId
+    ? data.invoices.filter((invoice) => invoice.cycleId === cycleId)
+    : data.invoices;
+  const invoices = compact ? sourceInvoices.slice(0, 5) : sourceInvoices;
 
   if (!invoices.length) return <EmptyState label="ยังไม่มีใบแจ้งหนี้" />;
 
@@ -1135,12 +1751,22 @@ function InvoiceList({
 
 function PaymentList({
   data,
+  cycleId,
   compact,
 }: {
   data: DashboardData;
+  cycleId?: string;
   compact?: boolean;
 }) {
-  const payments = compact ? data.payments.slice(0, 4) : data.payments;
+  const cycleInvoiceIds = new Set(
+    data.invoices
+      .filter((invoice) => !cycleId || invoice.cycleId === cycleId)
+      .map((invoice) => invoice.id),
+  );
+  const sourcePayments = data.payments.filter((payment) =>
+    cycleInvoiceIds.has(payment.invoiceId),
+  );
+  const payments = compact ? sourcePayments.slice(0, 4) : sourcePayments;
 
   if (!payments.length) return <EmptyState label="ยังไม่มีรายการชำระเงิน" />;
 
@@ -1224,6 +1850,83 @@ function SettingsPanel({ data }: { data: DashboardData }) {
         </CardContent>
       </Card>
     </section>
+  );
+}
+
+function CycleDialog({
+  data,
+  activeCycle,
+  onSubmit,
+}: {
+  data: DashboardData;
+  activeCycle: BillingCycle | null;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  const latestCycle = [...data.cycles].sort(
+    (a, b) =>
+      new Date(b.periodStart).getTime() - new Date(a.periodStart).getTime(),
+  )[0];
+  const baseDate = latestCycle
+    ? addMonths(new Date(latestCycle.periodStart), 1)
+    : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const periodEnd = endOfMonth(baseDate);
+
+  return (
+    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogHeader>
+        <DialogTitle>สร้างรอบบิลใหม่</DialogTitle>
+        <DialogDescription>กำหนดช่วงวันที่และวันครบกำหนด</DialogDescription>
+      </DialogHeader>
+      <form onSubmit={onSubmit} className="grid gap-4">
+        <input
+          type="hidden"
+          name="closeCurrentCycleId"
+          value={activeCycle?.status === "open" ? activeCycle.id : ""}
+        />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field
+            label="ชื่อรอบบิล"
+            name="label"
+            defaultValue={cycleLabel(baseDate)}
+            required
+          />
+          <div className="grid gap-2">
+            <Label>สถานะ</Label>
+            <Select name="status" defaultValue="open">
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="open">เปิดใช้งาน</SelectItem>
+                <SelectItem value="draft">ร่าง</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Field
+            label="เริ่มรอบ"
+            name="periodStart"
+            type="date"
+            defaultValue={dateInputValue(baseDate)}
+            required
+          />
+          <Field
+            label="สิ้นสุดรอบ"
+            name="periodEnd"
+            type="date"
+            defaultValue={dateInputValue(periodEnd)}
+            required
+          />
+          <Field
+            label="ครบกำหนดชำระ"
+            name="dueDate"
+            type="date"
+            defaultValue={dateInputValue(periodEnd)}
+            required
+          />
+        </div>
+        <Button type="submit">สร้างรอบบิล</Button>
+      </form>
+    </DialogContent>
   );
 }
 
