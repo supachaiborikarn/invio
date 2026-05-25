@@ -90,6 +90,41 @@ export function buildReportCsv(data: DashboardData, type: string) {
     ]);
   }
 
+  if (type === "monthly") {
+    return toCsv([
+      [
+        "cycle",
+        "period_start",
+        "period_end",
+        "invoices",
+        "invoice_total",
+        "paid",
+        "outstanding",
+        "vat",
+      ],
+      ...data.cycles.map((cycle) => {
+        const cycleInvoices = data.invoices.filter(
+          (invoice) => invoice.cycleId === cycle.id,
+        );
+        const cycleInvoiceIds = new Set(cycleInvoices.map((invoice) => invoice.id));
+        const paid = data.payments
+          .filter((payment) => cycleInvoiceIds.has(payment.invoiceId))
+          .reduce((sum, payment) => sum + payment.amount, 0);
+
+        return [
+          cycle.label,
+          cycle.periodStart,
+          cycle.periodEnd,
+          cycleInvoices.length,
+          cycleInvoices.reduce((sum, invoice) => sum + invoice.total, 0),
+          paid,
+          cycleInvoices.reduce((sum, invoice) => sum + invoice.balance, 0),
+          cycleInvoices.reduce((sum, invoice) => sum + invoice.vatAmount, 0),
+        ];
+      }),
+    ]);
+  }
+
   return toCsv([
     ["invoice_no", "tenant", "due_date", "status", "total", "paid", "balance"],
     ...data.invoices.map((invoice) => {
@@ -106,4 +141,3 @@ export function buildReportCsv(data: DashboardData, type: string) {
     }),
   ]);
 }
-

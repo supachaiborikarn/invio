@@ -33,6 +33,7 @@ CLOUDINARY_UPLOAD_FOLDER=meter-readings
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 NEXT_PUBLIC_APP_URL=http://localhost:3001
+REMINDER_API_SECRET=
 
 RESEND_API_KEY=
 BILLING_EMAIL_FROM=
@@ -60,6 +61,7 @@ npm run db:studio
 - `/portal/[token]` หน้า portal ผู้เช่าสำหรับดูบิลและใบเสร็จ
 - `/api/payments/stripe/checkout` สร้าง Stripe Checkout Session
 - `/api/payments/stripe/webhook` รับ webhook จาก Stripe
+- `/api/reminders/due` ส่งอีเมลเตือนก่อนครบกำหนดและหลังเลยกำหนด
 - `/api/reports/[type]` export รายงาน CSV
 - `/print/invoice/[id]` หน้าใบแจ้งหนี้สำหรับพิมพ์หรือบันทึก PDF
 - `/print/receipt/[id]` หน้าใบเสร็จสำหรับพิมพ์หรือบันทึก PDF

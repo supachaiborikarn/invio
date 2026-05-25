@@ -36,10 +36,12 @@ import {
   generateBatchInvoicesAction,
   recordMeterReadingAction,
   recordPaymentAction,
+  sendInvoiceReminderEmailAction,
   updateBillingCycleStatusAction,
   createTenantPortalLinkAction,
   revokeTenantPortalLinkAction,
   sendInvoiceEmailAction,
+  sendReceiptEmailAction,
   updateOrganizationAction,
   updateTenantAction,
   updateUnitAction,
@@ -1004,6 +1006,28 @@ export function BillingWorkspace({
     if (result.ok) router.refresh();
   }
 
+  async function handleSendReminder(invoiceId: string) {
+    const formData = new FormData();
+    formData.set("invoiceId", invoiceId);
+    const result = await sendInvoiceReminderEmailAction(
+      { ok: false, message: "" },
+      formData,
+    );
+    setActionMessage(result.message);
+    if (result.ok) router.refresh();
+  }
+
+  async function handleSendReceipt(paymentId: string) {
+    const formData = new FormData();
+    formData.set("paymentId", paymentId);
+    const result = await sendReceiptEmailAction(
+      { ok: false, message: "" },
+      formData,
+    );
+    setActionMessage(result.message);
+    if (result.ok) router.refresh();
+  }
+
   async function handleVoidInvoice(invoiceId: string) {
     const reason = window.prompt("เหตุผลยกเลิกใบแจ้งหนี้");
     if (!reason) return;
@@ -1293,6 +1317,7 @@ export function BillingWorkspace({
                 data={data}
                 cycleId={activeCycle?.id ?? ""}
                 onSendInvoice={handleSendInvoice}
+                onSendReminder={handleSendReminder}
                 onVoidInvoice={handleVoidInvoice}
               />
             </TabsContent>
@@ -1301,6 +1326,7 @@ export function BillingWorkspace({
               <PaymentList
                 data={data}
                 cycleId={activeCycle?.id ?? ""}
+                onSendReceipt={handleSendReceipt}
                 onVoidPayment={handleVoidPayment}
               />
             </TabsContent>
@@ -1872,12 +1898,14 @@ function InvoiceList({
   cycleId,
   compact,
   onSendInvoice,
+  onSendReminder,
   onVoidInvoice,
 }: {
   data: DashboardData;
   cycleId?: string;
   compact?: boolean;
   onSendInvoice?: (invoiceId: string) => void;
+  onSendReminder?: (invoiceId: string) => void;
   onVoidInvoice?: (invoiceId: string) => void;
 }) {
   const sourceInvoices = cycleId
@@ -1972,6 +2000,18 @@ function InvoiceList({
                           <Mail className="size-4" />
                         </Button>
                       ) : null}
+                      {onSendReminder &&
+                      invoice.balance > 0 &&
+                      invoice.status !== "void" ? (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => onSendReminder(invoice.id)}
+                          title="ส่งเตือนชำระ"
+                        >
+                          <AlertCircle className="size-4" />
+                        </Button>
+                      ) : null}
                       {onVoidInvoice && invoice.status !== "void" ? (
                         <Button
                           size="icon"
@@ -2030,6 +2070,17 @@ function InvoiceList({
                       ส่งอีเมล
                     </Button>
                   ) : null}
+                  {onSendReminder &&
+                  invoice.balance > 0 &&
+                  invoice.status !== "void" ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onSendReminder(invoice.id)}
+                    >
+                      ส่งเตือน
+                    </Button>
+                  ) : null}
                   {onVoidInvoice && invoice.status !== "void" ? (
                     <Button
                       variant="outline"
@@ -2053,11 +2104,13 @@ function PaymentList({
   data,
   cycleId,
   compact,
+  onSendReceipt,
   onVoidPayment,
 }: {
   data: DashboardData;
   cycleId?: string;
   compact?: boolean;
+  onSendReceipt?: (paymentId: string) => void;
   onVoidPayment?: (paymentId: string) => void;
 }) {
   const cycleInvoiceIds = new Set(
@@ -2101,6 +2154,16 @@ function PaymentList({
                   <span className="font-semibold">
                     {formatCurrency(payment.amount)}
                   </span>
+                  {onSendReceipt ? (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => onSendReceipt(payment.id)}
+                      title="ส่งใบเสร็จ"
+                    >
+                      <Mail className="size-4" />
+                    </Button>
+                  ) : null}
                   <PrintButton href={`/print/receipt/${payment.id}`} />
                   {onVoidPayment && payment.refundStatus === "none" ? (
                     <Button
@@ -2137,12 +2200,29 @@ function ReportsPanel({
   );
   const total = cycleInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
   const vat = cycleInvoices.reduce((sum, invoice) => sum + invoice.vatAmount, 0);
+  const monthlyRows = data.cycles.map((cycle) => {
+    const invoices = data.invoices.filter((invoice) => invoice.cycleId === cycle.id);
+    const invoiceIds = new Set(invoices.map((invoice) => invoice.id));
+    const paid = data.payments
+      .filter((payment) => invoiceIds.has(payment.invoiceId))
+      .reduce((sum, payment) => sum + payment.amount, 0);
+
+    return {
+      cycle,
+      invoices: invoices.length,
+      total: invoices.reduce((sum, invoice) => sum + invoice.total, 0),
+      paid,
+      outstanding: invoices.reduce((sum, invoice) => sum + invoice.balance, 0),
+      vat: invoices.reduce((sum, invoice) => sum + invoice.vatAmount, 0),
+    };
+  });
   const reports = [
     ["outstanding", "ยอดค้าง"],
     ["payments", "ยอดรับเงิน"],
     ["vat", "VAT"],
     ["cycles", "รอบบิล"],
     ["meters", "มิเตอร์"],
+    ["monthly", "รายเดือน"],
   ];
 
   return (
@@ -2175,6 +2255,61 @@ function ReportsPanel({
               <a href={`/api/reports/${type}`}>{label}</a>
             </Button>
           ))}
+        </CardContent>
+      </Card>
+      <Card className="rounded-md">
+        <CardHeader>
+          <CardTitle className="text-base">รายงานรายเดือน</CardTitle>
+          <CardDescription>สรุปยอดบิล รับเงิน ค้างชำระ และ VAT ตามรอบบิล</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="hidden overflow-hidden border border-border md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>รอบบิล</TableHead>
+                  <TableHead className="text-right">บิล</TableHead>
+                  <TableHead className="text-right">ยอดรวม</TableHead>
+                  <TableHead className="text-right">รับเงิน</TableHead>
+                  <TableHead className="text-right">ค้าง</TableHead>
+                  <TableHead className="text-right">VAT</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {monthlyRows.map((row) => (
+                  <TableRow key={row.cycle.id}>
+                    <TableCell>{row.cycle.label}</TableCell>
+                    <TableCell className="text-right">{row.invoices}</TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(row.total)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(row.paid)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(row.outstanding)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(row.vat)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="grid gap-3 md:hidden">
+            {monthlyRows.map((row) => (
+              <div
+                key={row.cycle.id}
+                className="grid gap-2 border border-border p-4 text-sm"
+              >
+                <p className="font-medium">{row.cycle.label}</p>
+                <Info label="ยอดรวม" value={formatCurrency(row.total)} />
+                <Info label="รับเงิน" value={formatCurrency(row.paid)} />
+                <Info label="ค้าง" value={formatCurrency(row.outstanding)} />
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     </section>

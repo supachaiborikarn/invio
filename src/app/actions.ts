@@ -26,8 +26,8 @@ import {
   toSatang,
 } from "@/lib/billing";
 import { getBillingEmailFrom, getResend } from "@/lib/email";
-import { getAppUrl, isResendConfigured } from "@/lib/dashboard-data";
-import { createPortalToken, hashPortalToken } from "@/lib/portal";
+import { isResendConfigured } from "@/lib/dashboard-data";
+import { createPortalLinkForTenant } from "@/lib/portal-links";
 import type { InvoiceItem, InvoiceType } from "@/lib/types";
 
 type ActionResult = {
@@ -929,32 +929,6 @@ export async function generateBatchInvoicesAction(
   };
 }
 
-async function createPortalLink(
-  tenantId: string,
-  createdByUserId: string | null,
-) {
-  const token = createPortalToken();
-  const tokenHash = hashPortalToken(token);
-  const db = getDb();
-  const organizationId = await getDefaultOrganizationId();
-  const [link] = await db
-    .insert(tenantPortalLinks)
-    .values({
-      organizationId,
-      tenantId,
-      tokenHash,
-      createdByUserId,
-    })
-    .returning({ id: tenantPortalLinks.id });
-
-  return {
-    token,
-    tokenHash,
-    linkId: link.id,
-    url: `${getAppUrl()}/portal/${token}`,
-  };
-}
-
 export async function createTenantPortalLinkAction(
   _previousState: ActionResult,
   formData: FormData,
@@ -968,7 +942,7 @@ export async function createTenantPortalLinkAction(
   const tenantId = textValue(formData, "tenantId");
   if (!tenantId) return { ok: false, message: "ไม่พบผู้เช่า" };
 
-  const link = await createPortalLink(tenantId, user.appUserId);
+  const link = await createPortalLinkForTenant(tenantId, user.appUserId);
 
   revalidatePath("/");
   return { ok: true, message: `สร้างลิงก์ผู้เช่าแล้ว: ${link.url}` };
@@ -1018,7 +992,7 @@ export async function sendInvoiceEmailAction(
     return { ok: false, message: "ไม่พบใบแจ้งหนี้" };
   }
 
-  const link = await createPortalLink(tenant.id, user.appUserId);
+  const link = await createPortalLinkForTenant(tenant.id, user.appUserId);
   const invoiceUrl = `${link.url}/invoice/${invoice.id}`;
 
   if (!tenant.email) {
@@ -1059,6 +1033,166 @@ export async function sendInvoiceEmailAction(
 
   revalidatePath("/");
   return { ok: true, message: "ส่งอีเมลใบแจ้งหนี้แล้ว" };
+}
+
+export async function sendInvoiceReminderEmailAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const invoiceId = textValue(formData, "invoiceId");
+  const db = getDb();
+  const [[invoice], tenantRows] = await Promise.all([
+    db.select().from(invoices).where(eq(invoices.id, invoiceId)).limit(1),
+    db.select().from(tenants),
+  ]);
+  const tenant = tenantRows.find((item) => item.id === invoice?.tenantId);
+
+  if (!invoice || !tenant) {
+    return { ok: false, message: "ไม่พบใบแจ้งหนี้" };
+  }
+
+  if (invoice.balanceSatang <= 0 || invoice.status === "void") {
+    return { ok: false, message: "ใบแจ้งหนี้นี้ไม่ต้องแจ้งเตือน" };
+  }
+
+  const link = await createPortalLinkForTenant(tenant.id, user.appUserId);
+  const invoiceUrl = `${link.url}/invoice/${invoice.id}`;
+  const isOverdue = invoice.dueDate.getTime() < Date.now();
+  const subject = isOverdue
+    ? `แจ้งเตือนยอดค้างชำระ ${invoice.invoiceNo}`
+    : `แจ้งเตือนกำหนดชำระ ${invoice.invoiceNo}`;
+
+  if (!tenant.email) {
+    revalidatePath("/");
+    return {
+      ok: true,
+      message: `ผู้เช่ายังไม่มีอีเมล ใช้ลิงก์นี้แทน: ${invoiceUrl}`,
+    };
+  }
+
+  if (!isResendConfigured()) {
+    revalidatePath("/");
+    return {
+      ok: true,
+      message: `ยังไม่ตั้งค่า Resend ส่งเมลไม่ได้ ใช้ลิงก์นี้แทน: ${invoiceUrl}`,
+    };
+  }
+
+  const { error } = await getResend().emails.send({
+    from: getBillingEmailFrom(),
+    to: tenant.email,
+    subject,
+    html: `
+      <div style="font-family: sans-serif; line-height: 1.6">
+        <h2>${subject}</h2>
+        <p>เรียน ${tenant.name}</p>
+        <p>ใบแจ้งหนี้ ${invoice.invoiceNo} มียอดค้างชำระ ${(invoice.balanceSatang / 100).toLocaleString("th-TH", { style: "currency", currency: "THB" })}</p>
+        <p>กำหนดชำระ ${invoice.dueDate.toLocaleDateString("th-TH")}</p>
+        <p><a href="${invoiceUrl}">เปิดใบแจ้งหนี้และชำระเงิน</a></p>
+      </div>
+    `,
+  });
+
+  if (error) {
+    return { ok: false, message: error.message ?? "ส่งอีเมลไม่สำเร็จ" };
+  }
+
+  await db.insert(invoiceAuditLogs).values({
+    organizationId: invoice.organizationId,
+    invoiceId: invoice.id,
+    actorUserId: user.appUserId,
+    action: isOverdue ? "overdue_reminder_sent" : "due_reminder_sent",
+    reason: "ส่งอีเมลแจ้งเตือนชำระเงิน",
+  });
+
+  revalidatePath("/");
+  return { ok: true, message: "ส่งอีเมลแจ้งเตือนแล้ว" };
+}
+
+export async function sendReceiptEmailAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const paymentId = textValue(formData, "paymentId");
+  const db = getDb();
+  const [payment] = await db
+    .select()
+    .from(payments)
+    .where(eq(payments.id, paymentId))
+    .limit(1);
+
+  if (!payment) return { ok: false, message: "ไม่พบใบเสร็จ" };
+
+  const [[invoice], tenantRows] = await Promise.all([
+    db.select().from(invoices).where(eq(invoices.id, payment.invoiceId)).limit(1),
+    db.select().from(tenants),
+  ]);
+  const tenant = tenantRows.find((item) => item.id === invoice?.tenantId);
+
+  if (!invoice || !tenant) {
+    return { ok: false, message: "ไม่พบข้อมูลใบเสร็จ" };
+  }
+
+  const link = await createPortalLinkForTenant(tenant.id, user.appUserId);
+  const receiptUrl = `${link.url}/receipt/${payment.id}`;
+
+  if (!tenant.email) {
+    revalidatePath("/");
+    return {
+      ok: true,
+      message: `ผู้เช่ายังไม่มีอีเมล ใช้ลิงก์นี้แทน: ${receiptUrl}`,
+    };
+  }
+
+  if (!isResendConfigured()) {
+    revalidatePath("/");
+    return {
+      ok: true,
+      message: `ยังไม่ตั้งค่า Resend ส่งเมลไม่ได้ ใช้ลิงก์นี้แทน: ${receiptUrl}`,
+    };
+  }
+
+  const { error } = await getResend().emails.send({
+    from: getBillingEmailFrom(),
+    to: tenant.email,
+    subject: `ใบเสร็จ ${payment.receiptNo}`,
+    html: `
+      <div style="font-family: sans-serif; line-height: 1.6">
+        <h2>ใบเสร็จ ${payment.receiptNo}</h2>
+        <p>เรียน ${tenant.name}</p>
+        <p>ระบบบันทึกการชำระเงินสำหรับใบแจ้งหนี้ ${invoice.invoiceNo} แล้ว</p>
+        <p>ยอดรับชำระ ${(payment.amountSatang / 100).toLocaleString("th-TH", { style: "currency", currency: "THB" })}</p>
+        <p><a href="${receiptUrl}">เปิดใบเสร็จ</a></p>
+      </div>
+    `,
+  });
+
+  if (error) {
+    return { ok: false, message: error.message ?? "ส่งอีเมลไม่สำเร็จ" };
+  }
+
+  await db.insert(invoiceAuditLogs).values({
+    organizationId: invoice.organizationId,
+    invoiceId: invoice.id,
+    actorUserId: user.appUserId,
+    action: "receipt_email_sent",
+    reason: payment.receiptNo,
+  });
+
+  revalidatePath("/");
+  return { ok: true, message: "ส่งอีเมลใบเสร็จแล้ว" };
 }
 
 export async function recordPaymentAction(
