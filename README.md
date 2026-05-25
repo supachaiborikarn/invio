@@ -59,6 +59,7 @@ npm run db:studio
 - `/api/cloudinary/sign` ออก signature สำหรับอัปโหลดรูปมิเตอร์
 - `/api/meter-images/[id]` เปิดรูปมิเตอร์ผ่าน route ที่ตรวจสิทธิ์
 - `/portal/[token]` หน้า portal ผู้เช่าสำหรับดูบิลและใบเสร็จ
+- `/api/health/readiness` ตรวจ env ที่ต้องใช้ก่อนเปิด production เต็มรูปแบบ
 - `/api/payments/stripe/checkout` สร้าง Stripe Checkout Session
 - `/api/payments/stripe/webhook` รับ webhook จาก Stripe
 - `/api/reminders/due` ส่งอีเมลเตือนก่อนครบกำหนดและหลังเลยกำหนด

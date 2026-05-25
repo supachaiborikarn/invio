@@ -8,8 +8,12 @@ import {
   paymentEvents,
   paymentSessions,
   payments,
+  tenants,
 } from "@/db/schema";
 import { deriveInvoiceStatus, nextRunningNo } from "@/lib/billing";
+import { isResendConfigured } from "@/lib/dashboard-data";
+import { getBillingEmailFrom, getResend } from "@/lib/email";
+import { createPortalLinkForTenant } from "@/lib/portal-links";
 
 function receiptPrefixFromDate(value: Date) {
   return `RCPT-${value.getFullYear() + 543}${String(value.getMonth() + 1).padStart(2, "0")}`;
@@ -20,6 +24,48 @@ function paymentIntentId(session: Stripe.Checkout.Session) {
   return typeof session.payment_intent === "string"
     ? session.payment_intent
     : session.payment_intent.id;
+}
+
+async function sendStripeReceiptEmail(input: {
+  invoice: typeof invoices.$inferSelect;
+  paymentId: string;
+  receiptNo: string;
+  amountSatang: number;
+}) {
+  if (!isResendConfigured()) return;
+
+  const db = getDb();
+  const [tenant] = await db
+    .select()
+    .from(tenants)
+    .where(eq(tenants.id, input.invoice.tenantId))
+    .limit(1);
+
+  if (!tenant?.email) return;
+
+  const link = await createPortalLinkForTenant(tenant.id, null);
+  const receiptUrl = `${link.url}/receipt/${input.paymentId}`;
+  const { error } = await getResend().emails.send({
+    from: getBillingEmailFrom(),
+    to: tenant.email,
+    subject: `ใบเสร็จ ${input.receiptNo}`,
+    html: `
+      <div style="font-family: sans-serif; line-height: 1.6">
+        <h2>ใบเสร็จ ${input.receiptNo}</h2>
+        <p>เรียน ${tenant.name}</p>
+        <p>ระบบได้รับเงินผ่าน Stripe PromptPay สำหรับใบแจ้งหนี้ ${input.invoice.invoiceNo} แล้ว</p>
+        <p>ยอดรับชำระ ${(input.amountSatang / 100).toLocaleString("th-TH", { style: "currency", currency: "THB" })}</p>
+        <p><a href="${receiptUrl}">เปิดใบเสร็จ</a></p>
+      </div>
+    `,
+  });
+
+  await db.insert(invoiceAuditLogs).values({
+    organizationId: input.invoice.organizationId,
+    invoiceId: input.invoice.id,
+    action: error ? "receipt_email_failed" : "receipt_email_sent",
+    reason: error?.message ?? input.receiptNo,
+  });
 }
 
 export async function markStripeSessionFailed(
@@ -145,20 +191,23 @@ export async function recordStripeCheckoutPayment(
     Number(countRow?.count ?? 0),
   );
 
-  await db.insert(payments).values({
-    organizationId: invoice.organizationId,
-    invoiceId: invoice.id,
-    receiptNo,
-    paidAt: new Date(),
-    amountSatang,
-    method: "promptpay",
-    provider: "stripe",
-    providerSessionId: session.id,
-    providerPaymentId,
-    webhookEventId: eventId,
-    reference: providerPaymentId,
-    notes: "รับเงินออนไลน์ผ่าน Stripe PromptPay",
-  });
+  const [payment] = await db
+    .insert(payments)
+    .values({
+      organizationId: invoice.organizationId,
+      invoiceId: invoice.id,
+      receiptNo,
+      paidAt: new Date(),
+      amountSatang,
+      method: "promptpay",
+      provider: "stripe",
+      providerSessionId: session.id,
+      providerPaymentId,
+      webhookEventId: eventId,
+      reference: providerPaymentId,
+      notes: "รับเงินออนไลน์ผ่าน Stripe PromptPay",
+    })
+    .returning({ id: payments.id });
 
   await db
     .update(invoices)
@@ -181,6 +230,13 @@ export async function recordStripeCheckoutPayment(
     action: "stripe_payment_succeeded",
     reason: "Stripe webhook confirmed payment",
     metadata: eventId,
+  });
+
+  await sendStripeReceiptEmail({
+    invoice,
+    paymentId: payment.id,
+    receiptNo,
+    amountSatang,
   });
 
   revalidatePath("/");
