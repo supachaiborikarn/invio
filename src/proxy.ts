@@ -11,7 +11,8 @@ const clerk = clerkMiddleware(async (auth, request) => {
 export default function proxy(request: NextRequest, event: NextFetchEvent) {
   const publicPath =
     request.nextUrl.pathname.startsWith("/portal") ||
-    request.nextUrl.pathname.startsWith("/api/payments/stripe");
+    request.nextUrl.pathname.startsWith("/api/payments/stripe") ||
+    request.nextUrl.pathname.startsWith("/api/health/readiness");
 
   if (publicPath) {
     return NextResponse.next();
