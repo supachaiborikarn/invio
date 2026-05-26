@@ -2,191 +2,178 @@ import {
   calculateElectricityCharge,
   calculateInvoiceTotals,
 } from "@/lib/billing";
-import type { DashboardData, Invoice, InvoiceItem, MeterReading } from "@/lib/types";
+import type {
+  BillingCycle,
+  DashboardData,
+  Invoice,
+  InvoiceItem,
+  MeterReading,
+} from "@/lib/types";
 
-const rentItemA: InvoiceItem = {
-  id: "item-rent-a",
-  type: "rent",
-  description: "ค่าเช่าพื้นที่ A-01 เดือนพฤษภาคม 2569",
-  quantity: 1,
-  unitPrice: 18000,
-  amount: 18000,
-};
+const tenantId = "tenant-spx";
+const unitId = "unit-spx-shopee";
 
-const electricA = calculateElectricityCharge({
-  previousReading: 12880,
-  currentReading: 13245,
-  rate: 6.5,
-});
-
-const electricItemA: InvoiceItem = {
-  id: "item-electric-a",
-  type: "electricity",
-  description: "ค่าไฟพื้นที่ A-01 365 หน่วย",
-  quantity: electricA.usageUnits,
-  unitPrice: 6.5,
-  amount: electricA.amount,
-  meterReadingId: "reading-a",
-};
-
-const invoiceTotalsA = calculateInvoiceTotals({
-  items: [rentItemA, electricItemA],
-  vatEnabled: true,
-  vatRate: 7,
-  paid: 10000,
-});
-
-const rentItemB: InvoiceItem = {
-  id: "item-rent-b",
-  type: "rent",
-  description: "ค่าเช่าพื้นที่ B-12 เดือนพฤษภาคม 2569",
-  quantity: 1,
-  unitPrice: 12000,
-  amount: 12000,
-};
-
-const electricB = calculateElectricityCharge({
-  previousReading: 8420,
-  currentReading: 8588,
-  rate: 7,
-});
-
-const electricItemB: InvoiceItem = {
-  id: "item-electric-b",
-  type: "electricity",
-  description: "ค่าไฟพื้นที่ B-12 168 หน่วย",
-  quantity: electricB.usageUnits,
-  unitPrice: 7,
-  amount: electricB.amount,
-  meterReadingId: "reading-b",
-};
-
-const invoiceTotalsB = calculateInvoiceTotals({
-  items: [rentItemB, electricItemB],
-  vatEnabled: false,
-  paid: 0,
-});
-
-const fuelTransportItemC: InvoiceItem = {
-  id: "item-fuel-transport-c",
-  type: "fuel_transport",
-  description: "ค่าขนส่งน้ำมัน 3 เที่ยว รอบพฤษภาคม 2569",
-  quantity: 3,
-  unitPrice: 4500,
-  amount: 13500,
-};
-
-const invoiceTotalsC = calculateInvoiceTotals({
-  items: [fuelTransportItemC],
-  vatEnabled: true,
-  vatRate: 7,
-  paid: 0,
-});
-
-const invoices: Invoice[] = [
+const billingRows = [
   {
-    id: "invoice-a",
-    tenantId: "tenant-a",
-    cycleId: "cycle-may",
-    invoiceNo: "INV-256905-00001",
-    type: "mixed",
-    issueDate: "2026-05-24",
-    dueDate: "2026-05-31",
-    items: [rentItemA, electricItemA],
-    subtotal: invoiceTotalsA.subtotal,
-    discount: invoiceTotalsA.discount,
-    vatEnabled: true,
-    vatRate: invoiceTotalsA.vatRate,
-    vatAmount: invoiceTotalsA.vatAmount,
-    total: invoiceTotalsA.total,
-    paid: invoiceTotalsA.paid,
-    balance: invoiceTotalsA.balance,
-    status: "partial",
-    notes: "ชำระบางส่วนแล้ว",
+    id: "2569-01",
+    monthLabel: "มกราคม 2569",
+    invoiceNo: "69/01",
+    issueDate: "2026-01-22",
+    dueDate: "2026-01-22",
+    periodStart: "2026-01-01",
+    periodEnd: "2026-01-31",
+    previousDate: "2025-12-24T00:00:00.000Z",
+    currentDate: "2026-01-21T00:00:00.000Z",
+    previousReading: 7155,
+    currentReading: 7605,
   },
   {
-    id: "invoice-b",
-    tenantId: "tenant-b",
-    cycleId: "cycle-may",
-    invoiceNo: "INV-256905-00002",
-    type: "mixed",
-    issueDate: "2026-05-24",
-    dueDate: "2026-05-31",
-    items: [rentItemB, electricItemB],
-    subtotal: invoiceTotalsB.subtotal,
-    discount: invoiceTotalsB.discount,
-    vatEnabled: false,
-    vatRate: invoiceTotalsB.vatRate,
-    vatAmount: invoiceTotalsB.vatAmount,
-    total: invoiceTotalsB.total,
-    paid: invoiceTotalsB.paid,
-    balance: invoiceTotalsB.balance,
-    status: "issued",
+    id: "2569-02",
+    monthLabel: "กุมภาพันธ์ 2569",
+    invoiceNo: "69/02",
+    issueDate: "2026-02-23",
+    dueDate: "2026-02-23",
+    periodStart: "2026-02-01",
+    periodEnd: "2026-02-28",
+    previousDate: "2026-01-22T00:00:00.000Z",
+    currentDate: "2026-02-23T00:00:00.000Z",
+    previousReading: 7605,
+    currentReading: 8182,
   },
   {
-    id: "invoice-c",
-    tenantId: "tenant-c",
-    cycleId: "cycle-may",
-    invoiceNo: "INV-256905-00003",
-    type: "fuel_transport",
-    issueDate: "2026-05-24",
-    dueDate: "2026-05-31",
-    items: [fuelTransportItemC],
-    subtotal: invoiceTotalsC.subtotal,
-    discount: invoiceTotalsC.discount,
-    vatEnabled: true,
-    vatRate: invoiceTotalsC.vatRate,
-    vatAmount: invoiceTotalsC.vatAmount,
-    total: invoiceTotalsC.total,
-    paid: invoiceTotalsC.paid,
-    balance: invoiceTotalsC.balance,
-    status: "issued",
+    id: "2569-03",
+    monthLabel: "มีนาคม 2569",
+    invoiceNo: "69/03",
+    issueDate: "2026-03-23",
+    dueDate: "2026-03-23",
+    periodStart: "2026-03-01",
+    periodEnd: "2026-03-31",
+    previousDate: "2026-02-24T00:00:00.000Z",
+    currentDate: "2026-03-21T00:00:00.000Z",
+    previousReading: 8182,
+    currentReading: 8710,
+  },
+  {
+    id: "2569-04",
+    monthLabel: "เมษายน 2569",
+    invoiceNo: "69/04",
+    issueDate: "2026-04-23",
+    dueDate: "2026-04-23",
+    periodStart: "2026-04-01",
+    periodEnd: "2026-04-30",
+    previousDate: "2026-03-22T00:00:00.000Z",
+    currentDate: "2026-04-22T00:00:00.000Z",
+    previousReading: 8710,
+    currentReading: 9609,
+  },
+  {
+    id: "2569-05",
+    monthLabel: "พฤษภาคม 2569",
+    invoiceNo: "69/05",
+    issueDate: "2026-05-26",
+    dueDate: "2026-05-26",
+    periodStart: "2026-05-01",
+    periodEnd: "2026-05-31",
+    previousDate: "2026-04-23T00:00:00.000Z",
+    currentDate: "2026-05-23T00:00:00.000Z",
+    previousReading: 9609,
+    currentReading: 10556,
   },
 ];
 
-const meterReadings: MeterReading[] = [
-  {
-    id: "reading-a",
-    unitId: "unit-a",
-    tenantId: "tenant-a",
-    cycleId: "cycle-may",
-    previousReading: 12880,
-    currentReading: 13245,
-    usageUnits: electricA.usageUnits,
-    rate: 6.5,
-    amount: electricA.amount,
-    capturedAt: "2026-05-24T08:30:00.000Z",
-    imageUrl:
-      "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=900&q=80",
-    cloudinaryPublicId: "demo/meter-a",
-    cloudinaryVersion: 1,
-  },
-  {
-    id: "reading-b",
-    unitId: "unit-b",
-    tenantId: "tenant-b",
-    cycleId: "cycle-may",
-    previousReading: 8420,
-    currentReading: 8588,
-    usageUnits: electricB.usageUnits,
-    rate: 7,
-    amount: electricB.amount,
-    capturedAt: "2026-05-24T08:42:00.000Z",
-    imageUrl:
-      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=900&q=80",
-    cloudinaryPublicId: "demo/meter-b",
-    cloudinaryVersion: 1,
-  },
-];
+const cycles: BillingCycle[] = billingRows.map((row) => ({
+  id: `cycle-${row.id}`,
+  label: row.monthLabel,
+  periodStart: row.periodStart,
+  periodEnd: row.periodEnd,
+  dueDate: row.dueDate,
+  status: row.id === "2569-05" ? "open" : "closed",
+}));
+
+const readings = billingRows.map((row): MeterReading => {
+  const charge = calculateElectricityCharge({
+    previousReading: row.previousReading,
+    currentReading: row.currentReading,
+    rate: 5,
+  });
+
+  return {
+    id: `reading-${row.id}`,
+    unitId,
+    tenantId,
+    cycleId: `cycle-${row.id}`,
+    previousReading: row.previousReading,
+    currentReading: row.currentReading,
+    usageUnits: charge.usageUnits,
+    rate: 5,
+    amount: charge.amount,
+    capturedAt: row.currentDate,
+    imageUrl: "",
+  };
+});
+
+const previousReadingMarkers = billingRows.map((row): MeterReading => ({
+  id: `reading-start-${row.id}`,
+  unitId,
+  tenantId,
+  cycleId: "cycle-meter-history",
+  previousReading: row.previousReading,
+  currentReading: row.previousReading,
+  usageUnits: 0,
+  rate: 5,
+  amount: 0,
+  capturedAt: row.previousDate,
+  imageUrl: "",
+}));
+
+const meterReadings: MeterReading[] = [...previousReadingMarkers, ...readings];
+
+const invoices: Invoice[] = billingRows.map((row) => {
+  const reading = readings.find((item) => item.id === `reading-${row.id}`);
+  const item: InvoiceItem = {
+    id: `item-electric-${row.id}`,
+    type: "electricity",
+    description: `ค่าไฟฟ้าประจำเดือน ${row.monthLabel}`,
+    quantity: reading?.usageUnits ?? 0,
+    unitPrice: 5,
+    amount: reading?.amount ?? 0,
+    meterReadingId: reading?.id,
+  };
+  const totals = calculateInvoiceTotals({
+    items: [item],
+    vatEnabled: true,
+    vatRate: 7,
+  });
+
+  return {
+    id: `invoice-${row.id}`,
+    tenantId,
+    cycleId: `cycle-${row.id}`,
+    invoiceNo: row.invoiceNo,
+    type: "electricity",
+    issueDate: row.issueDate,
+    dueDate: row.dueDate,
+    items: [item],
+    subtotal: totals.subtotal,
+    discount: totals.discount,
+    vatEnabled: true,
+    vatRate: totals.vatRate,
+    vatAmount: totals.vatAmount,
+    total: totals.total,
+    paid: totals.paid,
+    balance: totals.balance,
+    status: "issued",
+  };
+});
 
 export const demoDashboardData: DashboardData = {
   organization: {
-    id: "org-demo",
-    name: "บริษัท ตัวอย่าง พร็อพเพอร์ตี้ จำกัด",
-    taxId: "0105569000000",
-    address: "99/9 ถนนตัวอย่าง แขวงคลองตัน เขตคลองเตย กรุงเทพมหานคร 10110",
-    phone: "02-000-0000",
-    email: "billing@example.com",
+    id: "org-wacharakiat-oil",
+    name: "หจก. วัชรเกียรติออยล์",
+    taxId: "0-6235-39000-91-1",
+    address: "657 ถ.เจริญสุข ต.ในเมือง อ.เมือง จ.กำแพงเพชร 62000",
+    phone: "",
+    email: "",
     vatRate: 7,
     vatEnabledDefault: true,
   },
@@ -197,109 +184,45 @@ export const demoDashboardData: DashboardData = {
       email: "admin@example.com",
       role: "admin",
     },
-    {
-      id: "user-staff",
-      name: "พนักงานบัญชี",
-      email: "staff@example.com",
-      role: "staff",
-    },
   ],
   tenants: [
     {
-      id: "tenant-a",
-      code: "T-001",
-      name: "ร้านกาแฟต้นไม้",
-      contactName: "คุณมะลิ",
-      taxId: "1103700000000",
-      phone: "089-000-1111",
-      email: "tenant-a@example.com",
-      billingAddress: "พื้นที่ A-01 อาคารตัวอย่าง",
-      vatEnabled: true,
-      status: "active",
-    },
-    {
-      id: "tenant-b",
-      code: "T-002",
-      name: "สตูดิโอแสงเหนือ",
-      contactName: "คุณวิน",
-      taxId: "",
-      phone: "088-000-2222",
-      email: "tenant-b@example.com",
-      billingAddress: "พื้นที่ B-12 อาคารตัวอย่าง",
-      vatEnabled: false,
-      status: "active",
-    },
-    {
-      id: "tenant-c",
-      code: "T-003",
-      name: "บริษัท ขนส่งน้ำมันสยาม จำกัด",
-      contactName: "คุณกานต์",
-      taxId: "0105569000001",
-      phone: "087-000-3333",
-      email: "fuel-transport@example.com",
-      billingAddress: "12/3 ถนนคลังน้ำมัน แขวงบางจาก กรุงเทพมหานคร 10260",
+      id: tenantId,
+      code: "SPX",
+      name: "บริษัท เอสพีเอ็กซ์ เอ็กซ์เพรส(ประเทศไทย) จำกัด สำนักงานใหญ่",
+      contactName: "",
+      taxId: "0-1055-61164-87-1",
+      phone: "",
+      email: "",
+      billingAddress:
+        "89 อาคาร เอไอเอ แคปปิตอลเซ็นเตอร์ ชั้น 24 ถ.รัชดาภิเษก\nแขวง ดินแดง เขต ดินแดง กรุงเทพมหานคร 10400",
       vatEnabled: true,
       status: "active",
     },
   ],
   units: [
     {
-      id: "unit-a",
-      code: "A-01",
-      name: "พื้นที่ A-01",
-      tenantId: "tenant-a",
-      rentAmount: 18000,
-      electricRate: 6.5,
-      meterSerial: "MEA-0001",
-      status: "occupied",
-    },
-    {
-      id: "unit-b",
-      code: "B-12",
-      name: "พื้นที่ B-12",
-      tenantId: "tenant-b",
-      rentAmount: 12000,
-      electricRate: 7,
-      meterSerial: "MEA-0012",
+      id: unitId,
+      code: "SPX",
+      name: "Shopee วัชรเกียรติ",
+      tenantId,
+      rentAmount: 0,
+      electricRate: 5,
+      meterSerial: "",
       status: "occupied",
     },
   ],
-  cycles: [
-    {
-      id: "cycle-may",
-      label: "พฤษภาคม 2569",
-      periodStart: "2026-05-01",
-      periodEnd: "2026-05-31",
-      dueDate: "2026-05-31",
-      status: "open",
-    },
-  ],
+  cycles,
   meterReadings,
   invoices,
-  payments: [
-    {
-      id: "payment-a",
-      invoiceId: "invoice-a",
-      receiptNo: "RCPT-256905-00001",
-      paidAt: "2026-05-24",
-      amount: 10000,
-      method: "bank_transfer",
-      provider: "manual",
-      providerSessionId: "",
-      providerPaymentId: "",
-      webhookEventId: "",
-      refundStatus: "none",
-      reference: "SCB 240526",
-      notes: "เงินโอนรอบแรก",
-    },
-  ],
+  payments: [],
   portalLinks: [
     {
-      id: "portal-link-a",
-      tenantId: "tenant-a",
+      id: "portal-link-spx",
+      tenantId,
       label: "ลิงก์ตัวอย่าง",
       active: true,
-      createdAt: "2026-05-24T08:00:00.000Z",
+      createdAt: "2026-05-26T00:00:00.000Z",
     },
   ],
   paymentSessions: [],

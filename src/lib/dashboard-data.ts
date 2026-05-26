@@ -85,12 +85,14 @@ export type InvoiceMeterEvidence = {
   id: string;
   title: string;
   imageUrl?: string;
+  previousImageUrl?: string;
   unitCode: string;
   unitName: string;
   meterSerial: string;
   previousReading: number;
   currentReading: number;
   usageUnits: number;
+  previousCapturedAt?: string;
   capturedAt: string;
   warning?: string;
 };
@@ -118,7 +120,16 @@ export function getInvoiceMeterEvidence(
 ): InvoiceMeterEvidence[] {
   const readingsById = new Map(data.meterReadings.map((reading) => [reading.id, reading]));
   const unitsById = new Map(data.units.map((unit) => [unit.id, unit]));
+  const previousReadingsByUnit = new Map<string, MeterReading[]>();
   const seenReadingIds = new Set<string>();
+  const newestFirst = (a: MeterReading, b: MeterReading) =>
+    new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime();
+
+  for (const reading of data.meterReadings) {
+    const list = previousReadingsByUnit.get(reading.unitId) ?? [];
+    list.push(reading);
+    previousReadingsByUnit.set(reading.unitId, list);
+  }
 
   return invoice.items.flatMap((item) => {
     if (!item.meterReadingId || seenReadingIds.has(item.meterReadingId)) {
@@ -130,18 +141,37 @@ export function getInvoiceMeterEvidence(
 
     seenReadingIds.add(reading.id);
     const unit = unitsById.get(reading.unitId);
+    const previousCandidates = (previousReadingsByUnit.get(reading.unitId) ?? [])
+      .filter(
+        (candidate) =>
+          candidate.id !== reading.id &&
+          candidate.currentReading === reading.previousReading,
+      );
+    const previousReading = [...previousCandidates].sort(newestFirst)[0];
+    const previousImageReading = previousCandidates
+      .filter(hasMeterImage)
+      .sort((a, b) => {
+        const actualReadingScore =
+          Number(b.usageUnits > 0) - Number(a.usageUnits > 0);
+
+        return actualReadingScore || newestFirst(a, b);
+      })[0];
 
     return [
       {
         id: reading.id,
         title: item.description,
         imageUrl: getMeterImageUrl(reading),
+        previousImageUrl: previousImageReading
+          ? getMeterImageUrl(previousImageReading)
+          : undefined,
         unitCode: unit?.code ?? "",
         unitName: unit?.name ?? "",
         meterSerial: unit?.meterSerial ?? "",
         previousReading: reading.previousReading,
         currentReading: reading.currentReading,
         usageUnits: reading.usageUnits,
+        previousCapturedAt: previousReading?.capturedAt,
         capturedAt: reading.capturedAt,
         warning: reading.warning,
       },

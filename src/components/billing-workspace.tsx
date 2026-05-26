@@ -1359,7 +1359,7 @@ export function BillingWorkspace({
               icon={Bolt}
               label="หน่วยไฟเดือนนี้"
               value={`${formatNumber(totals.electricUsage)} หน่วย`}
-              note={`${data.meterReadings.length} รูปมิเตอร์`}
+              note={`${data.meterReadings.filter(hasMeterImage).length} รูปมิเตอร์`}
             />
             <MetricCard
               icon={Users}
@@ -2068,19 +2068,23 @@ function MeterList({
         {readings.map((reading) => {
           const unit = getUnit(data, reading.unitId);
           const tenant = getTenant(data, reading.tenantId);
+          const imageSrc = meterReadingImageSrc(reading);
 
           return (
             <Card key={reading.id} className="overflow-hidden rounded-md">
               <div className="aspect-[16/10] bg-muted">
-                <img
-                  src={
-                    reading.cloudinaryPublicId?.startsWith("demo/")
-                      ? reading.imageUrl
-                      : `/api/meter-images/${reading.id}`
-                  }
-                  alt={`รูปมิเตอร์ ${unit?.code ?? ""}`}
-                  className="h-full w-full object-cover"
-                />
+                {imageSrc ? (
+                  <img
+                    src={imageSrc}
+                    alt={`รูปมิเตอร์ ${unit?.code ?? ""}`}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-xs text-muted-foreground">
+                    <Upload className="size-7" />
+                    <span>ยังไม่มีรูปมิเตอร์</span>
+                  </div>
+                )}
               </div>
               <CardContent className="grid gap-3 p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -2902,6 +2906,14 @@ function UnitDialog({
   );
 }
 
+function meterReadingImageSrc(reading?: MeterReading) {
+  if (!reading || !hasMeterImage(reading)) return "";
+
+  return reading.cloudinaryPublicId?.startsWith("demo/")
+    ? reading.imageUrl
+    : `/api/meter-images/${reading.id}`;
+}
+
 function MeterDialog({
   data,
   activeCycleId,
@@ -2922,17 +2934,40 @@ function MeterDialog({
   const [unitId, setUnitId] = useState(data.units[0]?.id ?? "");
   const unit = getUnit(data, unitId);
   const lastReading = [...data.meterReadings]
-    .filter((reading) => reading.unitId === unitId)
+    .filter(
+      (reading) =>
+        reading.unitId === unitId && reading.cycleId !== activeCycleId,
+    )
     .sort(
       (a, b) =>
         new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime(),
     )[0];
+  const previousImageReading = [...data.meterReadings]
+    .filter(
+      (reading) =>
+        reading.unitId === unitId &&
+        reading.cycleId !== activeCycleId &&
+        hasMeterImage(reading),
+    )
+    .sort((a, b) => {
+      const actualReadingScore =
+        Number(b.usageUnits > 0) - Number(a.usageUnits > 0);
+
+      return (
+        actualReadingScore ||
+        new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime()
+      );
+    })[0];
+  const previousImageSrc = meterReadingImageSrc(previousImageReading);
+  const previousDisplayReading = previousImageReading ?? lastReading;
 
   return (
     <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
       <DialogHeader>
         <DialogTitle>บันทึกมิเตอร์ไฟ</DialogTitle>
-        <DialogDescription>กรอกเลขและแนบรูปถ่ายรอบเดือนนี้</DialogDescription>
+        <DialogDescription>
+          อัปโหลดรูปเดือนนี้ ระบบจะดึงรูปเดือนก่อนจากเลขล่าสุดของพื้นที่เดียวกัน
+        </DialogDescription>
       </DialogHeader>
       <form onSubmit={onSubmit} className="grid gap-4">
         <input type="hidden" name="cycleId" value={activeCycleId} />
@@ -3002,31 +3037,76 @@ function MeterDialog({
           <Field label="เลขเดือนนี้" name="currentReading" type="number" />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="meterImage">รูปถ่ายมิเตอร์</Label>
-          <div className="grid gap-3 rounded-md border border-dashed border-border p-3 sm:grid-cols-[160px_minmax(0,1fr)] sm:items-center">
-            <div className="flex aspect-[4/3] items-center justify-center overflow-hidden bg-muted">
-              {uploadResult ? (
-                <img
-                  src={uploadResult.url}
-                  alt="ตัวอย่างรูปมิเตอร์"
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <Upload className="size-8 text-muted-foreground" />
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Input
-                id="meterImage"
-                type="file"
-                accept="image/*"
-                onChange={(event) => onFileChange(event.target.files?.[0])}
-              />
-              <p className="text-xs text-muted-foreground">
-                {isUploading ? "กำลังอัปโหลด..." : uploadMessage || "รองรับ JPG, PNG, HEIC"}
+          <Label htmlFor="meterImage">รูปมิเตอร์ประกอบใบแจ้งหนี้</Label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-md border border-border p-3">
+              <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+                <span className="font-medium">เดือนก่อน</span>
+                <span className="text-xs text-muted-foreground">
+                  {previousDisplayReading
+                    ? formatDate(previousDisplayReading.capturedAt)
+                    : "ยังไม่มีข้อมูล"}
+                </span>
+              </div>
+              <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-sm bg-muted">
+                {previousImageSrc ? (
+                  <img
+                    src={previousImageSrc}
+                    alt="รูปมิเตอร์เดือนก่อน"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="grid place-items-center gap-2 px-3 text-center text-xs text-muted-foreground">
+                    <Upload className="size-7" />
+                    <span>ยังไม่มีรูปเดือนก่อน</span>
+                  </div>
+                )}
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                เลขล่าสุด{" "}
+                {previousDisplayReading
+                  ? formatNumber(previousDisplayReading.currentReading)
+                  : "-"}
               </p>
             </div>
+
+            <div className="rounded-md border border-dashed border-border p-3">
+              <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+                <span className="font-medium">เดือนปัจจุบัน</span>
+                <span className="text-xs text-muted-foreground">
+                  ต้องอัปโหลดก่อนบันทึก
+                </span>
+              </div>
+              <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-sm bg-muted">
+                {uploadResult ? (
+                  <img
+                    src={uploadResult.url}
+                    alt="ตัวอย่างรูปมิเตอร์เดือนปัจจุบัน"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <Upload className="size-8 text-muted-foreground" />
+                )}
+              </div>
+              <div className="mt-3 grid gap-2">
+                <Input
+                  id="meterImage"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(event) => onFileChange(event.target.files?.[0])}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {isUploading
+                    ? "กำลังอัปโหลด..."
+                    : uploadMessage || "รองรับ JPG, PNG, HEIC"}
+                </p>
+              </div>
+            </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            เวลาออกใบแจ้งหนี้ ระบบจะแสดงรูปเดือนก่อนและรูปเดือนปัจจุบันคู่กัน
+          </p>
         </div>
         <div className="grid gap-2">
           <Label>ออกใบแจ้งหนี้ค่าไฟ</Label>
