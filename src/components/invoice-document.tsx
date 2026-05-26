@@ -111,7 +111,7 @@ export function InvoiceDocument({
 
   return (
     <article className="mx-auto w-full max-w-[210mm] bg-white p-3 text-[12px] leading-snug text-foreground print:max-w-none print:p-0 print:text-[10px] print:leading-tight print:text-black">
-      <section className="mx-auto min-h-[297mm] w-[190mm] max-w-full bg-white px-7 py-6 print:min-h-0 print:w-full print:px-0 print:py-0">
+      <section className="mx-auto min-h-[297mm] w-[190mm] max-w-full bg-white px-7 py-6 print:flex print:min-h-[285mm] print:w-full print:flex-col print:px-0 print:py-0">
         <header className="border-b-4 border-primary pb-4 print:border-b-2 print:border-black print:pb-3">
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_52mm] sm:items-start">
             <div className="min-w-0">
@@ -291,7 +291,7 @@ export function InvoiceDocument({
           </section>
         ) : null}
 
-        <section className="mt-10 grid grid-cols-2 gap-6 text-center font-semibold print:mt-6 print:text-[10px]">
+        <section className="mt-10 grid grid-cols-2 gap-6 text-center font-semibold print:mt-auto print:pt-8 print:text-[10px]">
           <div>
             <div className="mx-auto mb-2 w-40 border-t border-foreground print:w-32 print:border-black" />
             <p>ผู้รับใบแจ้งหนี้</p>
@@ -379,7 +379,7 @@ function EvidenceImageBox({
         <p className="font-semibold">{title}</p>
         <p className="text-muted-foreground print:text-black">{date}</p>
       </div>
-      <div className="mt-2 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-sm border border-dashed border-border bg-secondary/40 print:mt-1 print:h-[36mm] print:aspect-auto print:border-black print:bg-white">
+      <div className="mt-2 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-sm border border-dashed border-border bg-secondary/40 print:mt-1 print:h-[96mm] print:aspect-auto print:border-black print:bg-white">
         {imageUrl ? (
           <img
             src={imageUrl}
