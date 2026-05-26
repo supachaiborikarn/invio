@@ -28,7 +28,12 @@ import {
   Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
+import {
+  type FormEvent,
+  type MouseEvent,
+  useMemo,
+  useState,
+} from "react";
 import {
   createBillingCycleAction,
   createInvoiceForUnitAction,
@@ -112,6 +117,16 @@ import type {
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+export type WorkspaceTab =
+  | "overview"
+  | "cycles"
+  | "tenants"
+  | "meters"
+  | "invoices"
+  | "payments"
+  | "reports"
+  | "settings";
+
 type UploadResult = {
   url: string;
   publicId?: string;
@@ -157,6 +172,25 @@ const cycleStatusClass: Record<BillingCycle["status"], string> = {
   open: "bg-[var(--tone-ok-soft)] text-[var(--tone-ok)]",
   closed: "bg-muted text-muted-foreground",
 };
+
+const workspaceTabs: Array<{
+  value: WorkspaceTab;
+  label: string;
+  icon: typeof FileText;
+}> = [
+  { value: "overview", label: "ภาพรวม", icon: FileText },
+  { value: "cycles", label: "รอบบิล", icon: CalendarDays },
+  { value: "tenants", label: "ผู้เช่า", icon: Users },
+  { value: "meters", label: "มิเตอร์", icon: Gauge },
+  { value: "invoices", label: "ใบแจ้งหนี้", icon: ReceiptText },
+  { value: "payments", label: "ชำระเงิน", icon: Banknote },
+  { value: "reports", label: "รายงาน", icon: BarChart3 },
+  { value: "settings", label: "ตั้งค่า", icon: Settings },
+];
+
+function tabHref(tab: WorkspaceTab) {
+  return tab === "overview" ? "/" : `/?tab=${tab}`;
+}
 
 function field(form: HTMLFormElement, name: string) {
   return String(new FormData(form).get(name) ?? "").trim();
@@ -229,8 +263,10 @@ function EmptyState({ label }: { label: string }) {
 
 export function BillingWorkspace({
   initialData,
+  initialTab = "overview",
 }: {
   initialData: DashboardData;
+  initialTab?: WorkspaceTab;
 }) {
   const [data, setData] = useState(initialData);
   const [search, setSearch] = useState("");
@@ -243,6 +279,7 @@ export function BillingWorkspace({
   const [uploadMessage, setUploadMessage] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>(initialTab);
   const router = useRouter();
 
   const sortedCycles = useMemo(
@@ -264,6 +301,34 @@ export function BillingWorkspace({
     data.cycles.find((cycle) => cycle.id === defaultCycleId) ??
     null;
   const tabTriggerClass = "h-8 min-w-0 px-2 text-xs sm:text-sm";
+
+  const selectTab = (tab: WorkspaceTab) => {
+    setActiveTab(tab);
+
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", tabHref(tab));
+    }
+  };
+
+  const handleTabLinkClick = (
+    event: MouseEvent<HTMLAnchorElement>,
+    tab: WorkspaceTab,
+  ) => {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    selectTab(tab);
+  };
+
   const cycleInvoices = useMemo(
     () =>
       activeCycle
@@ -1075,35 +1140,42 @@ export function BillingWorkspace({
           </div>
 
           <nav className="mt-6 grid grid-cols-3 gap-2 md:grid-cols-1">
-            {[
-              ["ภาพรวม", FileText],
-              ["รอบบิล", CalendarDays],
-              ["ผู้เช่า", Users],
-              ["มิเตอร์", Gauge],
-              ["ใบแจ้งหนี้", ReceiptText],
-              ["ชำระเงิน", Banknote],
-              ["รายงาน", BarChart3],
-              ["ตั้งค่า", Settings],
-            ].map(([label, Icon]) => (
-              <a
-                href={`#${label}`}
-                key={String(label)}
-                className="flex min-w-0 items-center justify-center gap-2 rounded-md px-2 py-2 text-xs text-muted-foreground transition hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:justify-start md:text-sm"
-              >
-                <Icon className="size-4 shrink-0" />
-                <span className="truncate">{String(label)}</span>
-              </a>
-            ))}
+            {workspaceTabs.map((item) => {
+              const Icon = item.icon;
+              const selected = activeTab === item.value;
+
+              return (
+                <a
+                  href={tabHref(item.value)}
+                  key={item.value}
+                  onClick={(event) => handleTabLinkClick(event, item.value)}
+                  className={cn(
+                    "flex min-w-0 items-center justify-center gap-2 rounded-md px-2 py-2 text-xs transition md:justify-start md:text-sm",
+                    selected
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                      : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  )}
+                  aria-current={selected ? "page" : undefined}
+                >
+                  <Icon className="size-4 shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </a>
+              );
+            })}
           </nav>
 
-          <div className="mt-6 hidden rounded-md border border-border bg-card p-3 text-xs text-muted-foreground md:block">
+          <a
+            href={tabHref("settings")}
+            onClick={(event) => handleTabLinkClick(event, "settings")}
+            className="mt-6 hidden w-full rounded-md border border-border bg-card p-3 text-left text-xs text-muted-foreground transition hover:border-primary/40 hover:bg-sidebar-accent md:block"
+          >
             <div className="flex items-center gap-2 text-foreground">
               <Building2 className="size-4" />
               <span className="font-medium">{data.organization.name}</span>
             </div>
             <p className="mt-2 leading-6">{data.organization.phone}</p>
             <p>{data.organization.email}</p>
-          </div>
+          </a>
         </aside>
 
         <section className="min-w-0 px-4 py-5 sm:px-6 lg:px-8">
@@ -1235,31 +1307,107 @@ export function BillingWorkspace({
             </div>
           ) : null}
 
-          <Tabs defaultValue="overview" className="mt-5">
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => selectTab(value as WorkspaceTab)}
+            className="mt-5"
+          >
             <TabsList className="!grid !h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-8">
-              <TabsTrigger className={tabTriggerClass} value="overview">
-                ภาพรวม
+              <TabsTrigger
+                asChild
+                className={tabTriggerClass}
+                value="overview"
+              >
+                <a
+                  href={tabHref("overview")}
+                  onClick={(event) => handleTabLinkClick(event, "overview")}
+                >
+                  ภาพรวม
+                </a>
               </TabsTrigger>
-              <TabsTrigger className={tabTriggerClass} value="cycles">
-                รอบบิล
+              <TabsTrigger
+                asChild
+                className={tabTriggerClass}
+                value="cycles"
+              >
+                <a
+                  href={tabHref("cycles")}
+                  onClick={(event) => handleTabLinkClick(event, "cycles")}
+                >
+                  รอบบิล
+                </a>
               </TabsTrigger>
-              <TabsTrigger className={tabTriggerClass} value="tenants">
-                ผู้เช่า
+              <TabsTrigger
+                asChild
+                className={tabTriggerClass}
+                value="tenants"
+              >
+                <a
+                  href={tabHref("tenants")}
+                  onClick={(event) => handleTabLinkClick(event, "tenants")}
+                >
+                  ผู้เช่า
+                </a>
               </TabsTrigger>
-              <TabsTrigger className={tabTriggerClass} value="meters">
-                มิเตอร์
+              <TabsTrigger
+                asChild
+                className={tabTriggerClass}
+                value="meters"
+              >
+                <a
+                  href={tabHref("meters")}
+                  onClick={(event) => handleTabLinkClick(event, "meters")}
+                >
+                  มิเตอร์
+                </a>
               </TabsTrigger>
-              <TabsTrigger className={tabTriggerClass} value="invoices">
-                ใบแจ้งหนี้
+              <TabsTrigger
+                asChild
+                className={tabTriggerClass}
+                value="invoices"
+              >
+                <a
+                  href={tabHref("invoices")}
+                  onClick={(event) => handleTabLinkClick(event, "invoices")}
+                >
+                  ใบแจ้งหนี้
+                </a>
               </TabsTrigger>
-              <TabsTrigger className={tabTriggerClass} value="payments">
-                ชำระเงิน
+              <TabsTrigger
+                asChild
+                className={tabTriggerClass}
+                value="payments"
+              >
+                <a
+                  href={tabHref("payments")}
+                  onClick={(event) => handleTabLinkClick(event, "payments")}
+                >
+                  ชำระเงิน
+                </a>
               </TabsTrigger>
-              <TabsTrigger className={tabTriggerClass} value="reports">
-                รายงาน
+              <TabsTrigger
+                asChild
+                className={tabTriggerClass}
+                value="reports"
+              >
+                <a
+                  href={tabHref("reports")}
+                  onClick={(event) => handleTabLinkClick(event, "reports")}
+                >
+                  รายงาน
+                </a>
               </TabsTrigger>
-              <TabsTrigger className={tabTriggerClass} value="settings">
-                ตั้งค่า
+              <TabsTrigger
+                asChild
+                className={tabTriggerClass}
+                value="settings"
+              >
+                <a
+                  href={tabHref("settings")}
+                  onClick={(event) => handleTabLinkClick(event, "settings")}
+                >
+                  ตั้งค่า
+                </a>
               </TabsTrigger>
             </TabsList>
 

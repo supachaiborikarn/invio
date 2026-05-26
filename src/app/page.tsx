@@ -1,10 +1,37 @@
-import { BillingWorkspace } from "@/components/billing-workspace";
+import {
+  BillingWorkspace,
+  type WorkspaceTab,
+} from "@/components/billing-workspace";
 import { requireAppUser } from "@/lib/auth";
 import { getDashboardData } from "@/lib/dashboard-data";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
+const workspaceTabValues = new Set<WorkspaceTab>([
+  "overview",
+  "cycles",
+  "tenants",
+  "meters",
+  "invoices",
+  "payments",
+  "reports",
+  "settings",
+]);
+
+function getInitialTab(value: string | string[] | undefined): WorkspaceTab {
+  const tab = Array.isArray(value) ? value[0] : value;
+
+  return workspaceTabValues.has(tab as WorkspaceTab)
+    ? (tab as WorkspaceTab)
+    : "overview";
+}
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string | string[] | undefined }>;
+}) {
+  const initialTab = getInitialTab((await searchParams).tab);
   const user = await requireAppUser();
 
   if (!user.ok) {
@@ -20,6 +47,7 @@ export default async function Home() {
 
   const data = await getDashboardData();
   const dataKey = [
+    initialTab,
     data.cycles.map((cycle) => `${cycle.id}:${cycle.status}`).join("|"),
     data.tenants.length,
     data.units.length,
@@ -28,5 +56,11 @@ export default async function Home() {
     data.payments.length,
   ].join("-");
 
-  return <BillingWorkspace key={dataKey} initialData={data} />;
+  return (
+    <BillingWorkspace
+      key={dataKey}
+      initialData={data}
+      initialTab={initialTab}
+    />
+  );
 }
