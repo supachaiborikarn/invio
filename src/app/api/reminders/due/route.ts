@@ -32,8 +32,13 @@ async function handleReminder(request: Request) {
 
   if (!isResendConfigured()) {
     return NextResponse.json(
-      { message: "ยังไม่ได้ตั้งค่า Resend" },
-      { status: 503 },
+      {
+        message: "ปิดส่งอีเมลอัตโนมัติ ใช้วิธีส่งลิงก์เอง",
+        sent: 0,
+        skipped: 0,
+        failed: 0,
+      },
+      { status: 200 },
     );
   }
 

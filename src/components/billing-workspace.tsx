@@ -1583,9 +1583,9 @@ function ConfigStrip({ data }: { data: DashboardData }) {
       text: data.stripeConfigured ? "พร้อมรับเงินออนไลน์" : "ยังไม่ตั้งค่า env",
     },
     {
-      label: "Resend",
-      ok: data.resendConfigured,
-      text: data.resendConfigured ? "พร้อมส่งอีเมล" : "ยังไม่ตั้งค่า env",
+      label: "อีเมล",
+      ok: true,
+      text: data.resendConfigured ? "พร้อมส่งอีเมล" : "ใช้ส่งลิงก์เอง",
     },
   ];
 

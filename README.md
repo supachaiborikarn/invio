@@ -35,11 +35,12 @@ STRIPE_WEBHOOK_SECRET=
 NEXT_PUBLIC_APP_URL=http://localhost:3001
 REMINDER_API_SECRET=
 
+# ไม่บังคับ ถ้าไม่ตั้งค่า ระบบจะใช้วิธีคัดลอกลิงก์ส่งเอง
 RESEND_API_KEY=
 BILLING_EMAIL_FROM=
 ```
 
-ถ้ายังไม่ตั้งค่า env ระบบจะเปิดหน้า demo ได้ และจะแจ้งสถานะ Neon, Cloudinary, Clerk, Stripe, และ Resend บนหน้า dashboard.
+ถ้ายังไม่ตั้งค่า env ระบบจะเปิดหน้า demo ได้ และจะแจ้งสถานะ Neon, Cloudinary, Clerk, Stripe, และอีเมลบนหน้า dashboard.
 
 ## คำสั่งหลัก
 
@@ -62,7 +63,7 @@ npm run db:studio
 - `/api/health/readiness` ตรวจ env ที่ต้องใช้ก่อนเปิด production เต็มรูปแบบ
 - `/api/payments/stripe/checkout` สร้าง Stripe Checkout Session
 - `/api/payments/stripe/webhook` รับ webhook จาก Stripe
-- `/api/reminders/due` ส่งอีเมลเตือนก่อนครบกำหนดและหลังเลยกำหนด
+- `/api/reminders/due` ส่งอีเมลเตือนก่อนครบกำหนดและหลังเลยกำหนด ถ้าไม่ตั้งค่า Resend ระบบจะข้ามและใช้วิธีส่งลิงก์เอง
 - `/api/reports/[type]` export รายงาน CSV
 - `/print/invoice/[id]` หน้าใบแจ้งหนี้สำหรับพิมพ์หรือบันทึก PDF
 - `/print/receipt/[id]` หน้าใบเสร็จสำหรับพิมพ์หรือบันทึก PDF

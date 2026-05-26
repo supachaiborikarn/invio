@@ -1007,7 +1007,7 @@ export async function sendInvoiceEmailAction(
     revalidatePath("/");
     return {
       ok: true,
-      message: `ยังไม่ตั้งค่า Resend ส่งเมลไม่ได้ ใช้ลิงก์นี้แทน: ${invoiceUrl}`,
+      message: `ใช้โหมดส่งลิงก์เอง: ${invoiceUrl}`,
     };
   }
 
@@ -1080,7 +1080,7 @@ export async function sendInvoiceReminderEmailAction(
     revalidatePath("/");
     return {
       ok: true,
-      message: `ยังไม่ตั้งค่า Resend ส่งเมลไม่ได้ ใช้ลิงก์นี้แทน: ${invoiceUrl}`,
+      message: `ใช้โหมดส่งลิงก์เอง: ${invoiceUrl}`,
     };
   }
 
@@ -1160,7 +1160,7 @@ export async function sendReceiptEmailAction(
     revalidatePath("/");
     return {
       ok: true,
-      message: `ยังไม่ตั้งค่า Resend ส่งเมลไม่ได้ ใช้ลิงก์นี้แทน: ${receiptUrl}`,
+      message: `ใช้โหมดส่งลิงก์เอง: ${receiptUrl}`,
     };
   }
 
