@@ -1,8 +1,17 @@
 import { notFound } from "next/navigation";
+import { MeterEvidenceSection } from "@/components/meter-evidence-section";
 import { PrintToolbar } from "@/components/print-toolbar";
 import { requireAppUser } from "@/lib/auth";
-import { formatCurrency, formatDate, formatNumber } from "@/lib/billing";
-import { getInvoiceDocument } from "@/lib/dashboard-data";
+import {
+  formatCurrency,
+  formatDate,
+  formatInvoiceType,
+  formatNumber,
+} from "@/lib/billing";
+import {
+  getInvoiceDocument,
+  getInvoiceMeterEvidence,
+} from "@/lib/dashboard-data";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +28,8 @@ export default async function InvoicePrintPage({
   const { data, invoice, tenant, cycle } = await getInvoiceDocument(id);
 
   if (!invoice || !tenant) notFound();
+
+  const meterEvidence = getInvoiceMeterEvidence(data, invoice);
 
   return (
     <main className="min-h-screen bg-muted/50 text-foreground">
@@ -40,6 +51,7 @@ export default async function InvoicePrintPage({
             <DocRow label="วันที่ออก" value={formatDate(invoice.issueDate)} />
             <DocRow label="ครบกำหนด" value={formatDate(invoice.dueDate)} />
             <DocRow label="รอบบิล" value={cycle?.label ?? "-"} />
+            <DocRow label="ประเภท" value={formatInvoiceType(invoice.type)} />
           </div>
         </header>
 
@@ -85,6 +97,8 @@ export default async function InvoicePrintPage({
             </tbody>
           </table>
         </section>
+
+        <MeterEvidenceSection evidence={meterEvidence} />
 
         <section className="ml-auto grid max-w-sm gap-2 border-t border-border pt-5 text-sm">
           <DocRow label="ยอดก่อนภาษี" value={formatCurrency(invoice.subtotal)} />

@@ -22,6 +22,7 @@ import {
   calculateElectricityCharge,
   calculateInvoiceTotals,
   deriveInvoiceStatus,
+  hasMeterImage,
   nextRunningNo,
   toSatang,
 } from "@/lib/billing";
@@ -108,6 +109,12 @@ function receiptPrefixFromDate(value: Date) {
 
 function toDateValue(value: string) {
   return new Date(`${value}T00:00:00`);
+}
+
+const manualInvoiceTypes = ["rent", "fuel_transport", "other"] as const;
+
+function isManualInvoiceType(value: string): value is (typeof manualInvoiceTypes)[number] {
+  return manualInvoiceTypes.includes(value as (typeof manualInvoiceTypes)[number]);
 }
 
 const tenantSchema = z.object({
@@ -510,6 +517,13 @@ export async function recordMeterReadingAction(
     return { ok: false, message: "ข้อมูลมิเตอร์ไม่ครบ" };
   }
 
+  if (
+    !parsed.data.cloudinaryPublicId ||
+    !parsed.data.cloudinarySecureUrl?.startsWith("https://")
+  ) {
+    return { ok: false, message: "ต้องแนบรูปมิเตอร์ก่อนบันทึกเลขมิเตอร์" };
+  }
+
   const { usageUnits, amount, warning } = calculateElectricityCharge(parsed.data);
   const db = getDb();
   const organizationId = await getDefaultOrganizationId();
@@ -628,10 +642,9 @@ export async function createInvoiceForUnitAction(
   let tenantId = textValue(formData, "tenantId");
   const unitId = textValue(formData, "unitId");
   const billingCycleId = textValue(formData, "billingCycleId");
-  const type: InvoiceType =
-    textValue(formData, "type") === "electricity" ? "electricity" : "rent";
+  const requestedType = textValue(formData, "type") || "rent";
   const description = textValue(formData, "description");
-  const quantity = Math.max(numberValue(formData, "quantity"), 1);
+  const quantity = Math.max(Math.round(numberValue(formData, "quantity")), 1);
   const unitPrice =
     numberValue(formData, "unitPrice") || numberValue(formData, "rentAmount");
   const discount = numberValue(formData, "discount");
@@ -640,6 +653,19 @@ export async function createInvoiceForUnitAction(
 
   const db = getDb();
   const organizationId = await getDefaultOrganizationId();
+
+  if (requestedType === "electricity") {
+    return {
+      ok: false,
+      message: "ต้องบันทึกมิเตอร์พร้อมรูปก่อนออกใบแจ้งหนี้ค่าไฟ",
+    };
+  }
+
+  if (!isManualInvoiceType(requestedType)) {
+    return { ok: false, message: "ประเภทใบแจ้งหนี้ไม่ถูกต้อง" };
+  }
+
+  const type: InvoiceType = requestedType;
 
   if (!tenantId && unitId) {
     const [unit] = await db
@@ -650,7 +676,14 @@ export async function createInvoiceForUnitAction(
     tenantId = unit?.tenantId ?? "";
   }
 
-  if (!tenantId || !billingCycleId || !description || !dueDate) {
+  if (
+    !tenantId ||
+    !billingCycleId ||
+    !description ||
+    !dueDate ||
+    unitPrice <= 0 ||
+    (type === "rent" && !unitId)
+  ) {
     return { ok: false, message: "ข้อมูลใบแจ้งหนี้ไม่ครบ" };
   }
 
@@ -804,6 +837,7 @@ export async function generateBatchInvoicesAction(
   let skippedExisting = 0;
   let skippedNoTenant = 0;
   let missingMeter = 0;
+  let missingMeterImage = 0;
   let createdCount = 0;
   let runningCount = Number(countRow?.[0]?.count ?? 0);
   const prefix = invoicePrefixFromDate(cycle.periodStart);
@@ -838,6 +872,16 @@ export async function generateBatchInvoicesAction(
     }
 
     const reading = latestReadingByUnit.get(unit.id);
+    if (!reading) {
+      missingMeter += 1;
+      continue;
+    }
+
+    if (!hasMeterImage(reading)) {
+      missingMeterImage += 1;
+      continue;
+    }
+
     const items: InvoiceItem[] = [
       {
         id: "rent",
@@ -849,19 +893,15 @@ export async function generateBatchInvoicesAction(
       },
     ];
 
-    if (reading) {
-      items.push({
-        id: "electric",
-        type: "electricity",
-        description: `ค่าไฟพื้นที่ ${unit.code} ${reading.usageUnits} หน่วย`,
-        quantity: reading.usageUnits,
-        unitPrice: reading.rateSatang / 100,
-        amount: reading.amountSatang / 100,
-        meterReadingId: reading.id,
-      });
-    } else {
-      missingMeter += 1;
-    }
+    items.push({
+      id: "electric",
+      type: "electricity",
+      description: `ค่าไฟพื้นที่ ${unit.code} ${reading.usageUnits} หน่วย`,
+      quantity: reading.usageUnits,
+      unitPrice: reading.rateSatang / 100,
+      amount: reading.amountSatang / 100,
+      meterReadingId: reading.id,
+    });
 
     const totals = calculateInvoiceTotals({
       items,
@@ -884,7 +924,7 @@ export async function generateBatchInvoicesAction(
         tenantId: tenant.id,
         billingCycleId,
         invoiceNo,
-        type: reading ? "mixed" : "rent",
+        type: "mixed",
         issueDate: new Date(),
         dueDate: cycle.dueDate,
         subtotalSatang: toSatang(totals.subtotal),
@@ -919,13 +959,13 @@ export async function generateBatchInvoicesAction(
   if (!createdCount) {
     return {
       ok: false,
-      message: "ยังไม่มีรายการที่สร้างได้ในรอบบิลนี้",
+      message: `ยังไม่มีรายการที่สร้างได้ในรอบบิลนี้ ไม่มีเลขไฟ ${missingMeter} ห้อง ไม่มีรูปมิเตอร์ ${missingMeterImage} ห้อง`,
     };
   }
 
   return {
     ok: true,
-    message: `สร้างใบแจ้งหนี้ ${createdCount} ใบ ข้ามซ้ำ ${skippedExisting} ห้อง ไม่มีผู้เช่า ${skippedNoTenant} ห้อง ไม่มีเลขไฟ ${missingMeter} ห้อง`,
+    message: `สร้างใบแจ้งหนี้ ${createdCount} ใบ ข้ามซ้ำ ${skippedExisting} ห้อง ไม่มีผู้เช่า ${skippedNoTenant} ห้อง ไม่มีเลขไฟ ${missingMeter} ห้อง ไม่มีรูปมิเตอร์ ${missingMeterImage} ห้อง`,
   };
 }
 

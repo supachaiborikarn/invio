@@ -12,7 +12,12 @@ export type InvoiceStatus =
   | "overdue"
   | "void";
 
-export type InvoiceType = "rent" | "electricity" | "mixed" | "other";
+export type InvoiceType =
+  | "rent"
+  | "electricity"
+  | "fuel_transport"
+  | "mixed"
+  | "other";
 
 export type PaymentMethod = "cash" | "bank_transfer" | "promptpay" | "other";
 

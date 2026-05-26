@@ -1,4 +1,5 @@
 import type { DashboardData } from "@/lib/types";
+import { formatInvoiceType } from "@/lib/billing";
 
 function csvCell(value: string | number | boolean | null | undefined) {
   const text = value == null ? "" : String(value);
@@ -12,7 +13,7 @@ function toCsv(rows: Array<Array<string | number | boolean | null | undefined>>)
 export function buildReportCsv(data: DashboardData, type: string) {
   if (type === "payments") {
     return toCsv([
-      ["receipt_no", "invoice_no", "tenant", "paid_at", "amount", "method", "provider", "reference"],
+      ["receipt_no", "invoice_no", "invoice_type", "tenant", "paid_at", "amount", "method", "provider", "reference"],
       ...data.payments.map((payment) => {
         const invoice = data.invoices.find((item) => item.id === payment.invoiceId);
         const tenant = invoice
@@ -22,6 +23,7 @@ export function buildReportCsv(data: DashboardData, type: string) {
         return [
           payment.receiptNo,
           invoice?.invoiceNo ?? "",
+          invoice ? formatInvoiceType(invoice.type) : "",
           tenant?.name ?? "",
           payment.paidAt,
           payment.amount,
@@ -35,11 +37,12 @@ export function buildReportCsv(data: DashboardData, type: string) {
 
   if (type === "vat") {
     return toCsv([
-      ["invoice_no", "tenant", "issue_date", "subtotal", "vat_rate", "vat_amount", "total"],
+      ["invoice_no", "invoice_type", "tenant", "issue_date", "subtotal", "vat_rate", "vat_amount", "total"],
       ...data.invoices.map((invoice) => {
         const tenant = data.tenants.find((item) => item.id === invoice.tenantId);
         return [
           invoice.invoiceNo,
+          formatInvoiceType(invoice.type),
           tenant?.name ?? "",
           invoice.issueDate,
           invoice.subtotal,
@@ -126,11 +129,12 @@ export function buildReportCsv(data: DashboardData, type: string) {
   }
 
   return toCsv([
-    ["invoice_no", "tenant", "due_date", "status", "total", "paid", "balance"],
+    ["invoice_no", "invoice_type", "tenant", "due_date", "status", "total", "paid", "balance"],
     ...data.invoices.map((invoice) => {
       const tenant = data.tenants.find((item) => item.id === invoice.tenantId);
       return [
         invoice.invoiceNo,
+        formatInvoiceType(invoice.type),
         tenant?.name ?? "",
         invoice.dueDate,
         invoice.status,

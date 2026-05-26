@@ -15,7 +15,8 @@ import {
   tenantPortalLinks,
   tenants,
 } from "@/db/schema";
-import { fromSatang } from "@/lib/billing";
+import { fromSatang, hasMeterImage } from "@/lib/billing";
+import { createSignedImageUrl } from "@/lib/cloudinary";
 import { demoDashboardData } from "@/lib/demo-data";
 import { hashPortalToken } from "@/lib/portal";
 import type {
@@ -78,6 +79,74 @@ function withRuntimeFlags(data: DashboardData): DashboardData {
     resendConfigured: isResendConfigured(),
     appUrl: getAppUrl(),
   };
+}
+
+export type InvoiceMeterEvidence = {
+  id: string;
+  title: string;
+  imageUrl?: string;
+  unitCode: string;
+  unitName: string;
+  meterSerial: string;
+  previousReading: number;
+  currentReading: number;
+  usageUnits: number;
+  capturedAt: string;
+  warning?: string;
+};
+
+export function getMeterImageUrl(reading: MeterReading) {
+  if (!hasMeterImage(reading)) return undefined;
+
+  if (
+    isCloudinaryConfigured() &&
+    reading.cloudinaryPublicId &&
+    !reading.cloudinaryPublicId.startsWith("demo/")
+  ) {
+    return createSignedImageUrl(
+      reading.cloudinaryPublicId,
+      reading.cloudinaryVersion,
+    );
+  }
+
+  return reading.imageUrl || undefined;
+}
+
+export function getInvoiceMeterEvidence(
+  data: DashboardData,
+  invoice: Invoice,
+): InvoiceMeterEvidence[] {
+  const readingsById = new Map(data.meterReadings.map((reading) => [reading.id, reading]));
+  const unitsById = new Map(data.units.map((unit) => [unit.id, unit]));
+  const seenReadingIds = new Set<string>();
+
+  return invoice.items.flatMap((item) => {
+    if (!item.meterReadingId || seenReadingIds.has(item.meterReadingId)) {
+      return [];
+    }
+
+    const reading = readingsById.get(item.meterReadingId);
+    if (!reading) return [];
+
+    seenReadingIds.add(reading.id);
+    const unit = unitsById.get(reading.unitId);
+
+    return [
+      {
+        id: reading.id,
+        title: item.description,
+        imageUrl: getMeterImageUrl(reading),
+        unitCode: unit?.code ?? "",
+        unitName: unit?.name ?? "",
+        meterSerial: unit?.meterSerial ?? "",
+        previousReading: reading.previousReading,
+        currentReading: reading.currentReading,
+        usageUnits: reading.usageUnits,
+        capturedAt: reading.capturedAt,
+        warning: reading.warning,
+      },
+    ];
+  });
 }
 
 export async function getDashboardData(): Promise<DashboardData> {

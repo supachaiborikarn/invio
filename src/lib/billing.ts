@@ -1,4 +1,4 @@
-import type { InvoiceItem, InvoiceStatus } from "@/lib/types";
+import type { InvoiceItem, InvoiceStatus, InvoiceType } from "@/lib/types";
 
 export function formatCurrency(value: number) {
   return new Intl.NumberFormat("th-TH", {
@@ -20,12 +20,36 @@ export function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+export function formatInvoiceType(type: InvoiceType) {
+  const labels: Record<InvoiceType, string> = {
+    rent: "ค่าเช่า",
+    electricity: "ค่าไฟ",
+    fuel_transport: "ค่าขนส่งน้ำมัน",
+    mixed: "รวมค่าเช่าและค่าไฟ",
+    other: "อื่น ๆ",
+  };
+
+  return labels[type];
+}
+
 export function toSatang(value: number) {
   return Math.round(value * 100);
 }
 
 export function fromSatang(value: number | null | undefined) {
   return (value ?? 0) / 100;
+}
+
+export function hasMeterImage(input: {
+  imageUrl?: string | null;
+  cloudinaryPublicId?: string | null;
+  cloudinarySecureUrl?: string | null;
+}) {
+  return Boolean(
+    input.cloudinaryPublicId?.trim() ||
+      input.cloudinarySecureUrl?.trim() ||
+      input.imageUrl?.trim(),
+  );
 }
 
 export function calculateElectricityCharge(input: {

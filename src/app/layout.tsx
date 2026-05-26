@@ -19,8 +19,8 @@ const notoThai = Noto_Sans_Thai({
 });
 
 export const metadata: Metadata = {
-  title: "ระบบใบแจ้งหนี้ค่าเช่าและค่าไฟ",
-  description: "เว็บแอพจัดการใบแจ้งหนี้ผู้เช่า ค่าไฟ รูปมิเตอร์ และใบเสร็จ",
+  title: "ระบบใบแจ้งหนี้ค่าเช่า ค่าไฟ และค่าขนส่งน้ำมัน",
+  description: "เว็บแอพจัดการใบแจ้งหนี้ ค่าไฟ รูปมิเตอร์ ค่าขนส่งน้ำมัน และใบเสร็จ",
 };
 
 export default function RootLayout({

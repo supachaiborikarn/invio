@@ -36,6 +36,7 @@ export const invoiceStatusEnum = pgEnum("invoice_status", [
 export const invoiceTypeEnum = pgEnum("invoice_type", [
   "rent",
   "electricity",
+  "fuel_transport",
   "mixed",
   "other",
 ]);

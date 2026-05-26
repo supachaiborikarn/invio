@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAppUser } from "@/lib/auth";
-import { createSignedImageUrl } from "@/lib/cloudinary";
-import { getDashboardData, isCloudinaryConfigured } from "@/lib/dashboard-data";
+import { getDashboardData, getMeterImageUrl } from "@/lib/dashboard-data";
 
 export async function GET(
   _request: NextRequest,
@@ -24,18 +23,11 @@ export async function GET(
     return NextResponse.json({ message: "ไม่พบรูปมิเตอร์" }, { status: 404 });
   }
 
-  if (
-    isCloudinaryConfigured() &&
-    reading.cloudinaryPublicId &&
-    !reading.cloudinaryPublicId.startsWith("demo/")
-  ) {
-    return NextResponse.redirect(
-      createSignedImageUrl(
-        reading.cloudinaryPublicId,
-        reading.cloudinaryVersion,
-      ),
-    );
+  const imageUrl = getMeterImageUrl(reading);
+
+  if (!imageUrl) {
+    return NextResponse.json({ message: "ไม่พบรูปมิเตอร์" }, { status: 404 });
   }
 
-  return NextResponse.redirect(reading.imageUrl);
+  return NextResponse.redirect(imageUrl);
 }

@@ -15,6 +15,13 @@
       "when": 1779636012522,
       "tag": "0001_brave_norrin_radd",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779790299126,
+      "tag": "0002_thankful_electro",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { MeterEvidenceSection } from "@/components/meter-evidence-section";
 import { PortalPayButton } from "@/components/portal-pay-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,8 +11,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { formatCurrency, formatDate, formatNumber } from "@/lib/billing";
-import { getPortalInvoiceDocument } from "@/lib/dashboard-data";
+import {
+  formatCurrency,
+  formatDate,
+  formatInvoiceType,
+  formatNumber,
+} from "@/lib/billing";
+import {
+  getInvoiceMeterEvidence,
+  getPortalInvoiceDocument,
+} from "@/lib/dashboard-data";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +41,7 @@ export default async function PortalInvoicePage({
     portal.invoice.balance > 0 &&
     portal.invoice.status !== "void" &&
     portal.data.stripeConfigured;
+  const meterEvidence = getInvoiceMeterEvidence(portal.data, portal.invoice);
 
   return (
     <main className="min-h-screen bg-muted/50 px-4 py-6 text-foreground">
@@ -58,10 +68,11 @@ export default async function PortalInvoicePage({
               ใบแจ้งหนี้ {portal.invoice.invoiceNo}
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-4">
+          <CardContent className="grid gap-3 sm:grid-cols-5">
             <Info label="วันที่ออก" value={formatDate(portal.invoice.issueDate)} />
             <Info label="ครบกำหนด" value={formatDate(portal.invoice.dueDate)} />
             <Info label="รอบบิล" value={portal.cycle?.label ?? "-"} />
+            <Info label="ประเภท" value={formatInvoiceType(portal.invoice.type)} />
             <Info label="สถานะ" value={portal.invoice.status} />
           </CardContent>
         </Card>
@@ -81,6 +92,7 @@ export default async function PortalInvoicePage({
               <DocRow label="เลขที่" value={portal.invoice.invoiceNo} mono />
               <DocRow label="ครบกำหนด" value={formatDate(portal.invoice.dueDate)} />
               <DocRow label="รอบบิล" value={portal.cycle?.label ?? "-"} />
+              <DocRow label="ประเภท" value={formatInvoiceType(portal.invoice.type)} />
             </div>
           </header>
 
@@ -129,6 +141,8 @@ export default async function PortalInvoicePage({
               </tbody>
             </table>
           </section>
+
+          <MeterEvidenceSection evidence={meterEvidence} />
 
           <section className="ml-auto grid max-w-sm gap-2 border-t border-border pt-5 text-sm">
             <DocRow label="ยอดก่อนภาษี" value={formatCurrency(portal.invoice.subtotal)} />
@@ -206,4 +220,3 @@ function DocRow({
     </div>
   );
 }
-

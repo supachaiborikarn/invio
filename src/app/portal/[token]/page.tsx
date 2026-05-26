@@ -9,7 +9,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { formatCurrency, formatDate, formatNumber } from "@/lib/billing";
+import {
+  formatCurrency,
+  formatDate,
+  formatInvoiceType,
+  formatNumber,
+} from "@/lib/billing";
 import { getTenantPortalData } from "@/lib/dashboard-data";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +67,9 @@ export default async function TenantPortalPage({
                         </span>
                         <Badge variant="outline" className="rounded-sm">
                           {statusText[invoice.status]}
+                        </Badge>
+                        <Badge variant="outline" className="rounded-sm">
+                          {formatInvoiceType(invoice.type)}
                         </Badge>
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">
@@ -165,4 +173,3 @@ function Empty({ label }: { label: string }) {
     </div>
   );
 }
-

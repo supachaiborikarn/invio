@@ -67,6 +67,22 @@ const invoiceTotalsB = calculateInvoiceTotals({
   paid: 0,
 });
 
+const fuelTransportItemC: InvoiceItem = {
+  id: "item-fuel-transport-c",
+  type: "fuel_transport",
+  description: "ค่าขนส่งน้ำมัน 3 เที่ยว รอบพฤษภาคม 2569",
+  quantity: 3,
+  unitPrice: 4500,
+  amount: 13500,
+};
+
+const invoiceTotalsC = calculateInvoiceTotals({
+  items: [fuelTransportItemC],
+  vatEnabled: true,
+  vatRate: 7,
+  paid: 0,
+});
+
 const invoices: Invoice[] = [
   {
     id: "invoice-a",
@@ -105,6 +121,25 @@ const invoices: Invoice[] = [
     total: invoiceTotalsB.total,
     paid: invoiceTotalsB.paid,
     balance: invoiceTotalsB.balance,
+    status: "issued",
+  },
+  {
+    id: "invoice-c",
+    tenantId: "tenant-c",
+    cycleId: "cycle-may",
+    invoiceNo: "INV-256905-00003",
+    type: "fuel_transport",
+    issueDate: "2026-05-24",
+    dueDate: "2026-05-31",
+    items: [fuelTransportItemC],
+    subtotal: invoiceTotalsC.subtotal,
+    discount: invoiceTotalsC.discount,
+    vatEnabled: true,
+    vatRate: invoiceTotalsC.vatRate,
+    vatAmount: invoiceTotalsC.vatAmount,
+    total: invoiceTotalsC.total,
+    paid: invoiceTotalsC.paid,
+    balance: invoiceTotalsC.balance,
     status: "issued",
   },
 ];
@@ -192,6 +227,18 @@ export const demoDashboardData: DashboardData = {
       email: "tenant-b@example.com",
       billingAddress: "พื้นที่ B-12 อาคารตัวอย่าง",
       vatEnabled: false,
+      status: "active",
+    },
+    {
+      id: "tenant-c",
+      code: "T-003",
+      name: "บริษัท ขนส่งน้ำมันสยาม จำกัด",
+      contactName: "คุณกานต์",
+      taxId: "0105569000001",
+      phone: "087-000-3333",
+      email: "fuel-transport@example.com",
+      billingAddress: "12/3 ถนนคลังน้ำมัน แขวงบางจาก กรุงเทพมหานคร 10260",
+      vatEnabled: true,
       status: "active",
     },
   ],

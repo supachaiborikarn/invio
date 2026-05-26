@@ -24,6 +24,7 @@ import {
   Search,
   Settings,
   Sparkles,
+  Truck,
   Upload,
   Users,
 } from "lucide-react";
@@ -102,7 +103,9 @@ import {
   deriveInvoiceStatus,
   formatCurrency,
   formatDate,
+  formatInvoiceType,
   formatNumber,
+  hasMeterImage,
   nextRunningNo,
 } from "@/lib/billing";
 import type {
@@ -110,6 +113,7 @@ import type {
   BillingCycle,
   Invoice,
   InvoiceItem,
+  InvoiceType,
   MeterReading,
   Payment,
   RentalUnit,
@@ -253,6 +257,14 @@ function invoiceStatusBadge(status: Invoice["status"]) {
   );
 }
 
+function invoiceTypeBadge(type: Invoice["type"]) {
+  return (
+    <Badge variant="outline" className="rounded-sm px-2 py-1">
+      {formatInvoiceType(type)}
+    </Badge>
+  );
+}
+
 function EmptyState({ label }: { label: string }) {
   return (
     <div className="flex min-h-28 items-center justify-center border border-dashed border-border bg-muted/30 px-4 text-sm text-muted-foreground">
@@ -273,6 +285,7 @@ export function BillingWorkspace({
   const [tenantOpen, setTenantOpen] = useState(false);
   const [meterOpen, setMeterOpen] = useState(false);
   const [rentOpen, setRentOpen] = useState(false);
+  const [fuelTransportOpen, setFuelTransportOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [cycleOpen, setCycleOpen] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
@@ -392,6 +405,10 @@ export function BillingWorkspace({
 
   async function uploadMeterImage(file: File): Promise<UploadResult> {
     if (!data.cloudinaryConfigured) {
+      if (data.databaseConfigured) {
+        throw new Error("ยังไม่ได้ตั้งค่า Cloudinary จึงเก็บรูปมิเตอร์จริงไม่ได้");
+      }
+
       return {
         url: URL.createObjectURL(file),
       };
@@ -540,21 +557,36 @@ export function BillingWorkspace({
       if (result.ok) {
         form.reset();
         setRentOpen(false);
+        setFuelTransportOpen(false);
         router.refresh();
       }
       return;
     }
 
+    const invoiceType: InvoiceType =
+      field(form, "type") === "fuel_transport" ? "fuel_transport" : "rent";
     const unit = getUnit(data, field(form, "unitId"));
-    if (!unit) return;
+    const tenantId = invoiceType === "rent" ? unit?.tenantId : field(form, "tenantId");
+    const tenant = tenantId ? getTenant(data, tenantId) : undefined;
+    const quantity =
+      invoiceType === "rent"
+        ? 1
+        : Math.max(Math.round(amountField(form, "quantity")), 1);
+    const unitPrice =
+      invoiceType === "rent"
+        ? amountField(form, "rentAmount") || unit?.rentAmount || 0
+        : amountField(form, "unitPrice");
 
-    const tenant = getTenant(data, unit.tenantId);
-    const quantity = 1;
-    const unitPrice = amountField(form, "rentAmount") || unit.rentAmount;
+    if (!tenantId || !tenant || unitPrice <= 0) return;
+
     const item: InvoiceItem = {
       id: createId("item"),
-      type: "rent",
-      description: field(form, "description") || `ค่าเช่าพื้นที่ ${unit.code}`,
+      type: invoiceType,
+      description:
+        field(form, "description") ||
+        (invoiceType === "rent"
+          ? `ค่าเช่าพื้นที่ ${unit?.code ?? ""}`
+          : `ค่าขนส่งน้ำมัน รอบ ${activeCycle.label}`),
       quantity,
       unitPrice,
       amount: quantity * unitPrice,
@@ -567,10 +599,10 @@ export function BillingWorkspace({
     });
     const invoice: Invoice = {
       id: createId("invoice"),
-      tenantId: unit.tenantId,
+      tenantId,
       cycleId: activeCycle.id,
       invoiceNo: nextRunningNo("INV-256905", data.invoices.length),
-      type: "rent",
+      type: invoiceType,
       issueDate: today(),
       dueDate: field(form, "dueDate") || activeCycle.dueDate,
       items: [item],
@@ -586,6 +618,7 @@ export function BillingWorkspace({
     }));
     form.reset();
     setRentOpen(false);
+    setFuelTransportOpen(false);
   }
 
   async function handleMeterSubmit(event: FormEvent<HTMLFormElement>) {
@@ -594,6 +627,19 @@ export function BillingWorkspace({
 
     if (!activeCycle) {
       setActionMessage("ต้องสร้างรอบบิลก่อนบันทึกมิเตอร์");
+      return;
+    }
+
+    if (!uploadResult) {
+      setActionMessage("ต้องแนบรูปมิเตอร์ก่อนบันทึกเลขมิเตอร์");
+      return;
+    }
+
+    if (
+      data.databaseConfigured &&
+      (!uploadResult.publicId || !uploadResult.url.startsWith("https://"))
+    ) {
+      setActionMessage("ต้องอัปโหลดรูปเข้า Cloudinary ก่อนบันทึกมิเตอร์");
       return;
     }
 
@@ -635,9 +681,7 @@ export function BillingWorkspace({
       rate,
       amount: calculation.amount,
       capturedAt: new Date().toISOString(),
-      imageUrl:
-        uploadResult?.url ??
-        "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=900&q=80",
+      imageUrl: uploadResult.url,
       cloudinaryPublicId: uploadResult?.publicId,
       cloudinaryAssetId: uploadResult?.assetId,
       cloudinaryVersion: uploadResult?.version,
@@ -832,6 +876,7 @@ export function BillingWorkspace({
     let skippedExisting = 0;
     let skippedNoTenant = 0;
     let missingMeter = 0;
+    let missingMeterImage = 0;
 
     setData((current) => {
       const cycle = current.cycles.find((item) => item.id === activeCycle.id);
@@ -880,6 +925,16 @@ export function BillingWorkspace({
         }
 
         const reading = latestReadingByUnit.get(unit.id);
+        if (!reading) {
+          missingMeter += 1;
+          continue;
+        }
+
+        if (!hasMeterImage(reading)) {
+          missingMeterImage += 1;
+          continue;
+        }
+
         const items: InvoiceItem[] = [
           {
             id: createId("item"),
@@ -891,19 +946,15 @@ export function BillingWorkspace({
           },
         ];
 
-        if (reading) {
-          items.push({
-            id: createId("item"),
-            type: "electricity",
-            description: `ค่าไฟพื้นที่ ${unit.code} ${formatNumber(reading.usageUnits)} หน่วย`,
-            quantity: reading.usageUnits,
-            unitPrice: reading.rate,
-            amount: reading.amount,
-            meterReadingId: reading.id,
-          });
-        } else {
-          missingMeter += 1;
-        }
+        items.push({
+          id: createId("item"),
+          type: "electricity",
+          description: `ค่าไฟพื้นที่ ${unit.code} ${formatNumber(reading.usageUnits)} หน่วย`,
+          quantity: reading.usageUnits,
+          unitPrice: reading.rate,
+          amount: reading.amount,
+          meterReadingId: reading.id,
+        });
 
         const totalsForInvoice = calculateInvoiceTotals({
           items,
@@ -921,7 +972,7 @@ export function BillingWorkspace({
             prefix,
             current.invoices.length + newInvoices.length,
           ),
-          type: reading ? "mixed" : "rent",
+          type: "mixed",
           issueDate: today(),
           dueDate: cycle.dueDate,
           items,
@@ -941,8 +992,8 @@ export function BillingWorkspace({
 
     setActionMessage(
       createdCount
-        ? `สร้างใบแจ้งหนี้ ${createdCount} ใบ ข้ามซ้ำ ${skippedExisting} ห้อง ไม่มีผู้เช่า ${skippedNoTenant} ห้อง ไม่มีเลขไฟ ${missingMeter} ห้อง`
-        : "ยังไม่มีรายการที่สร้างได้ในรอบบิลนี้",
+        ? `สร้างใบแจ้งหนี้ ${createdCount} ใบ ข้ามซ้ำ ${skippedExisting} ห้อง ไม่มีผู้เช่า ${skippedNoTenant} ห้อง ไม่มีเลขไฟ ${missingMeter} ห้อง ไม่มีรูปมิเตอร์ ${missingMeterImage} ห้อง`
+        : `ยังไม่มีรายการที่สร้างได้ในรอบบิลนี้ ไม่มีเลขไฟ ${missingMeter} ห้อง ไม่มีรูปมิเตอร์ ${missingMeterImage} ห้อง`,
     );
   }
 
@@ -1134,7 +1185,7 @@ export function BillingWorkspace({
                 ระบบใบแจ้งหนี้
               </p>
               <p className="truncate text-xs text-muted-foreground">
-                ค่าเช่าและค่าไฟ
+                ค่าเช่า ค่าไฟ ค่าขนส่งน้ำมัน
               </p>
             </div>
           </div>
@@ -1255,6 +1306,24 @@ export function BillingWorkspace({
                 </DialogTrigger>
                 {activeCycle ? (
                   <RentInvoiceDialog
+                    data={data}
+                    activeCycle={activeCycle}
+                    onSubmit={handleRentInvoiceSubmit}
+                  />
+                ) : null}
+              </Dialog>
+              <Dialog
+                open={fuelTransportOpen}
+                onOpenChange={setFuelTransportOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button variant="outline" disabled={!activeCycle}>
+                    <Truck className="size-4" />
+                    ใบขนส่งน้ำมัน
+                  </Button>
+                </DialogTrigger>
+                {activeCycle ? (
+                  <FuelTransportInvoiceDialog
                     data={data}
                     activeCycle={activeCycle}
                     onSubmit={handleRentInvoiceSubmit}
@@ -1816,23 +1885,42 @@ function BatchSummary({
       .filter((invoice) => invoice.cycleId === cycleId)
       .map((invoice) => invoice.tenantId),
   );
-  const readingsByUnit = new Set(
-    data.meterReadings
-      .filter((reading) => reading.cycleId === cycleId)
-      .map((reading) => reading.unitId),
-  );
+  const latestReadingByUnit = new Map<string, MeterReading>();
+
+  for (const reading of data.meterReadings.filter(
+    (item) => item.cycleId === cycleId,
+  )) {
+    const existing = latestReadingByUnit.get(reading.unitId);
+    if (
+      !existing ||
+      new Date(reading.capturedAt).getTime() >
+        new Date(existing.capturedAt).getTime()
+    ) {
+      latestReadingByUnit.set(reading.unitId, reading);
+    }
+  }
+
   const readyUnits = occupiedUnits.filter(
     (unit) => unit.tenantId && !existingTenantIds.has(unit.tenantId),
   );
   const missingMeter = readyUnits.filter(
-    (unit) => !readingsByUnit.has(unit.id),
+    (unit) => !latestReadingByUnit.has(unit.id),
   ).length;
+  const missingMeterImage = readyUnits.filter((unit) => {
+    const reading = latestReadingByUnit.get(unit.id);
+    return reading && !hasMeterImage(reading);
+  }).length;
+  const readyWithMeterImage = readyUnits.filter((unit) => {
+    const reading = latestReadingByUnit.get(unit.id);
+    return reading && hasMeterImage(reading);
+  }).length;
 
   return (
-    <div className="grid grid-cols-3 gap-2 text-sm">
-      <Info label="พร้อมสร้าง" value={`${readyUnits.length} ห้อง`} />
+    <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+      <Info label="พร้อมสร้าง" value={`${readyWithMeterImage} ห้อง`} />
       <Info label="มีบิลแล้ว" value={`${existingTenantIds.size} ห้อง`} />
       <Info label="ไม่มีเลขไฟ" value={`${missingMeter} ห้อง`} />
+      <Info label="ไม่มีรูป" value={`${missingMeterImage} ห้อง`} />
     </div>
   );
 }
@@ -2077,6 +2165,7 @@ function InvoiceList({
                     <span className="font-mono text-xs">
                       {invoice.invoiceNo}
                     </span>
+                    {invoiceTypeBadge(invoice.type)}
                     {invoiceStatusBadge(invoice.status)}
                   </div>
                   <p className="mt-1 truncate text-sm text-muted-foreground">
@@ -2110,6 +2199,7 @@ function InvoiceList({
             <TableRow>
               <TableHead>เลขที่</TableHead>
               <TableHead>ผู้เช่า</TableHead>
+              <TableHead>ประเภท</TableHead>
               <TableHead>กำหนดชำระ</TableHead>
               <TableHead>สถานะ</TableHead>
               <TableHead className="text-right">ยอดรวม</TableHead>
@@ -2127,6 +2217,7 @@ function InvoiceList({
                     {invoice.invoiceNo}
                   </TableCell>
                   <TableCell>{tenant?.name ?? "-"}</TableCell>
+                  <TableCell>{invoiceTypeBadge(invoice.type)}</TableCell>
                   <TableCell>{formatDate(invoice.dueDate)}</TableCell>
                   <TableCell>{invoiceStatusBadge(invoice.status)}</TableCell>
                   <TableCell className="text-right font-medium">
@@ -2193,7 +2284,10 @@ function InvoiceList({
                     </CardTitle>
                     <CardDescription>{tenant?.name ?? "-"}</CardDescription>
                   </div>
-                  {invoiceStatusBadge(invoice.status)}
+                  <div className="flex flex-wrap justify-end gap-2">
+                    {invoiceTypeBadge(invoice.type)}
+                    {invoiceStatusBadge(invoice.status)}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="grid gap-3">
@@ -3017,6 +3111,7 @@ function RentInvoiceDialog({
         <div className="grid gap-2">
           <Label>VAT</Label>
           <Select
+            key={`${unitId}-rent-vat`}
             name="vatEnabled"
             defaultValue={tenant?.vatEnabled ?? true ? "yes" : "no"}
           >
@@ -3030,6 +3125,99 @@ function RentInvoiceDialog({
           </Select>
         </div>
         <Button type="submit">ออกใบแจ้งหนี้</Button>
+      </form>
+    </DialogContent>
+  );
+}
+
+function FuelTransportInvoiceDialog({
+  data,
+  activeCycle,
+  onSubmit,
+}: {
+  data: DashboardData;
+  activeCycle: DashboardData["cycles"][number];
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  const [tenantId, setTenantId] = useState(data.tenants[0]?.id ?? "");
+  const tenant = getTenant(data, tenantId);
+
+  return (
+    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogHeader>
+        <DialogTitle>ออกใบแจ้งหนี้ค่าขนส่งน้ำมัน</DialogTitle>
+        <DialogDescription>เลือกผู้ถูกเรียกเก็บและกรอกยอดขนส่ง</DialogDescription>
+      </DialogHeader>
+      <form onSubmit={onSubmit} className="grid gap-4">
+        <input type="hidden" name="billingCycleId" value={activeCycle.id} />
+        <input type="hidden" name="type" value="fuel_transport" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <Label>ผู้ถูกเรียกเก็บ</Label>
+            <Select name="tenantId" value={tenantId} onValueChange={setTenantId}>
+              <SelectTrigger>
+                <SelectValue placeholder="เลือกผู้ถูกเรียกเก็บ" />
+              </SelectTrigger>
+              <SelectContent>
+                {data.tenants.map((item) => (
+                  <SelectItem key={item.id} value={item.id}>
+                    {item.code} · {item.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Field
+            label="จำนวนเที่ยว"
+            name="quantity"
+            type="number"
+            defaultValue="1"
+          />
+          <Field
+            label="ค่าขนส่งต่อหน่วย"
+            name="unitPrice"
+            type="number"
+            step="0.01"
+            defaultValue="0"
+          />
+          <Field
+            label="ส่วนลด"
+            name="discount"
+            type="number"
+            step="0.01"
+            defaultValue="0"
+          />
+          <Field
+            label="กำหนดชำระ"
+            name="dueDate"
+            type="date"
+            defaultValue={activeCycle.dueDate.slice(0, 10)}
+          />
+        </div>
+        <Field
+          label="รายละเอียด"
+          name="description"
+          defaultValue={`ค่าขนส่งน้ำมัน รอบ ${activeCycle.label}`}
+        />
+        <div className="grid gap-2">
+          <Label>VAT</Label>
+          <Select
+            key={`${tenantId}-fuel-vat`}
+            name="vatEnabled"
+            defaultValue={tenant?.vatEnabled ?? true ? "yes" : "no"}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="yes">คิด VAT</SelectItem>
+              <SelectItem value="no">ไม่คิด VAT</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Button type="submit" disabled={!data.tenants.length}>
+          ออกใบแจ้งหนี้
+        </Button>
       </form>
     </DialogContent>
   );
