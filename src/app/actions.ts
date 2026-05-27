@@ -1812,3 +1812,294 @@ export async function voidPaymentAction(
   revalidatePath("/");
   return { ok: true, message: "ยกเลิกรายการรับเงินแล้ว" };
 }
+
+export async function updateMeterReadingAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const meterReadingId = textValue(formData, "meterReadingId");
+  const previousReading = numberValue(formData, "previousReading");
+  const currentReading = numberValue(formData, "currentReading");
+  const rate = numberValue(formData, "rate");
+  const cloudinaryPublicId = textValue(formData, "cloudinaryPublicId");
+  const cloudinaryAssetId = textValue(formData, "cloudinaryAssetId");
+  const cloudinarySecureUrl = textValue(formData, "cloudinarySecureUrl");
+  const cloudinaryVersion = numberValue(formData, "cloudinaryVersion") || undefined;
+  const imageWidth = numberValue(formData, "imageWidth") || undefined;
+  const imageHeight = numberValue(formData, "imageHeight") || undefined;
+
+  if (!meterReadingId) {
+    return { ok: false, message: "ไม่พบข้อมูลการอ่านมิเตอร์" };
+  }
+
+  const db = getDb();
+  const organizationId = await getDefaultOrganizationId();
+
+  // 1. Fetch existing reading
+  const [existingReading] = await db
+    .select()
+    .from(meterReadings)
+    .where(and(eq(meterReadings.id, meterReadingId), eq(meterReadings.organizationId, organizationId)))
+    .limit(1);
+
+  if (!existingReading) {
+    return { ok: false, message: "ไม่พบข้อมูลมิเตอร์ที่ต้องการแก้ไข" };
+  }
+
+  // 2. Calculate electricity charge
+  const { usageUnits, amount, warning } = calculateElectricityCharge({
+    previousReading,
+    currentReading,
+    rate,
+  });
+
+  // 3. Update meter reading row
+  const updateData: Record<string, unknown> = {
+    previousReading,
+    currentReading,
+    usageUnits,
+    rateSatang: toSatang(rate),
+    amountSatang: toSatang(amount),
+    warning: warning ?? "",
+  };
+
+  // Only update image details if new image is uploaded
+  if (cloudinaryPublicId && cloudinarySecureUrl) {
+    updateData.cloudinaryPublicId = cloudinaryPublicId;
+    updateData.cloudinaryAssetId = cloudinaryAssetId ?? "";
+    updateData.cloudinarySecureUrl = cloudinarySecureUrl;
+    updateData.cloudinaryVersion = cloudinaryVersion;
+    updateData.imageWidth = imageWidth;
+    updateData.imageHeight = imageHeight;
+  }
+
+  await db
+    .update(meterReadings)
+    .set(updateData)
+    .where(eq(meterReadings.id, meterReadingId));
+
+  // 4. Find all invoice items pointing to this meterReadingId
+  const linkedItems = await db
+    .select()
+    .from(invoiceItems)
+    .where(eq(invoiceItems.meterReadingId, meterReadingId));
+
+  // 5. Update linked invoices
+  for (const item of linkedItems) {
+    const [invoice] = await db
+      .select()
+      .from(invoices)
+      .where(and(eq(invoices.id, item.invoiceId), eq(invoices.organizationId, organizationId)))
+      .limit(1);
+
+    if (invoice && invoice.status !== "void" && invoice.status !== "paid") {
+      // 5.1. Update the invoice item details
+      await db
+        .update(invoiceItems)
+        .set({
+          description: `ค่าไฟ ${usageUnits} หน่วย`,
+          quantity: usageUnits,
+          unitPriceSatang: toSatang(rate),
+          amountSatang: toSatang(amount),
+        })
+        .where(eq(invoiceItems.id, item.id));
+
+      // 5.2. Fetch all current items for this invoice to recalculate totals
+      const currentInvoiceItems = await db
+        .select()
+        .from(invoiceItems)
+        .where(eq(invoiceItems.invoiceId, invoice.id));
+
+      const formattedItems: InvoiceItem[] = currentInvoiceItems.map((itm) => ({
+        id: itm.id,
+        type: itm.type,
+        description: itm.description,
+        quantity: itm.quantity,
+        unitPrice: itm.unitPriceSatang / 100,
+        amount: itm.amountSatang / 100,
+        meterReadingId: itm.meterReadingId ?? undefined,
+      }));
+
+      const totals = calculateInvoiceTotals({
+        items: formattedItems,
+        discount: invoice.discountSatang / 100,
+        vatEnabled: invoice.vatEnabled,
+        vatRate: invoice.vatRateBasisPoints / 100,
+      });
+
+      const nextStatus = deriveInvoiceStatus({
+        total: totals.total,
+        paid: invoice.paidSatang / 100,
+        dueDate: invoice.dueDate.toISOString(),
+        issued: true,
+      });
+
+      await db
+        .update(invoices)
+        .set({
+          subtotalSatang: toSatang(totals.subtotal),
+          vatAmountSatang: toSatang(totals.vatAmount),
+          totalSatang: toSatang(totals.total),
+          balanceSatang: Math.max(toSatang(totals.total) - invoice.paidSatang, 0),
+          status: nextStatus,
+          notes: warning ?? "",
+          updatedAt: new Date(),
+        })
+        .where(eq(invoices.id, invoice.id));
+
+      await db.insert(invoiceAuditLogs).values({
+        organizationId,
+        invoiceId: invoice.id,
+        actorUserId: user.appUserId,
+        action: "update_invoice_via_meter",
+        reason: "อัปเดตยอดเงินตามเลขมิเตอร์ที่แก้ไข",
+      });
+
+      revalidatePath(`/print/invoice/${invoice.id}`);
+    }
+  }
+
+  revalidatePath("/");
+  return { ok: true, message: "แก้ไขเลขมิเตอร์และปรับปรุงใบแจ้งหนี้ที่เกี่ยวข้องแล้ว" };
+}
+
+export async function deleteMeterReadingAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const meterReadingId = textValue(formData, "meterReadingId");
+
+  if (!meterReadingId) {
+    return { ok: false, message: "ไม่พบข้อมูลการอ่านมิเตอร์" };
+  }
+
+  const db = getDb();
+  const organizationId = await getDefaultOrganizationId();
+
+  // 1. Fetch reading
+  const [reading] = await db
+    .select()
+    .from(meterReadings)
+    .where(and(eq(meterReadings.id, meterReadingId), eq(meterReadings.organizationId, organizationId)))
+    .limit(1);
+
+  if (!reading) {
+    return { ok: false, message: "ไม่พบข้อมูลมิเตอร์ที่ต้องการลบ" };
+  }
+
+  // 2. Check if linked to active non-void invoices
+  const linkedItems = await db
+    .select()
+    .from(invoiceItems)
+    .where(eq(invoiceItems.meterReadingId, meterReadingId));
+
+  for (const item of linkedItems) {
+    const [invoice] = await db
+      .select()
+      .from(invoices)
+      .where(and(eq(invoices.id, item.invoiceId), eq(invoices.organizationId, organizationId)))
+      .limit(1);
+
+    if (invoice && invoice.status !== "void") {
+      if (invoice.status === "paid" || invoice.status === "partial") {
+        return {
+          ok: false,
+          message: `ไม่สามารถลบได้ เนื่องจากมีการชำระเงินในใบแจ้งหนี้ ${invoice.invoiceNo} แล้ว`,
+        };
+      }
+      
+      const allItems = await db
+        .select()
+        .from(invoiceItems)
+        .where(eq(invoiceItems.invoiceId, invoice.id));
+
+      if (allItems.length <= 1) {
+        if (invoice.status === "draft") {
+          await db.delete(invoices).where(eq(invoices.id, invoice.id));
+        } else {
+          await db
+            .update(invoices)
+            .set({ status: "void", balanceSatang: 0, updatedAt: new Date() })
+            .where(eq(invoices.id, invoice.id));
+          
+          await db.insert(invoiceAuditLogs).values({
+            organizationId,
+            invoiceId: invoice.id,
+            actorUserId: user.appUserId,
+            action: "void_invoice_via_meter_delete",
+            reason: "ยกเลิกใบแจ้งหนี้อัตโนมัติเนื่องจากลบเลขมิเตอร์ต้นทาง",
+          });
+        }
+      } else {
+        await db.delete(invoiceItems).where(eq(invoiceItems.id, item.id));
+
+        const remainingItems = allItems.filter((itm) => itm.id !== item.id);
+        const formattedItems: InvoiceItem[] = remainingItems.map((itm) => ({
+          id: itm.id,
+          type: itm.type,
+          description: itm.description,
+          quantity: itm.quantity,
+          unitPrice: itm.unitPriceSatang / 100,
+          amount: itm.amountSatang / 100,
+          meterReadingId: itm.meterReadingId ?? undefined,
+        }));
+
+        const totals = calculateInvoiceTotals({
+          items: formattedItems,
+          discount: invoice.discountSatang / 100,
+          vatEnabled: invoice.vatEnabled,
+          vatRate: invoice.vatRateBasisPoints / 100,
+        });
+
+        const nextStatus = deriveInvoiceStatus({
+          total: totals.total,
+          paid: invoice.paidSatang / 100,
+          dueDate: invoice.dueDate.toISOString(),
+          issued: true,
+        });
+
+        await db
+          .update(invoices)
+          .set({
+            subtotalSatang: toSatang(totals.subtotal),
+            vatAmountSatang: toSatang(totals.vatAmount),
+            totalSatang: toSatang(totals.total),
+            balanceSatang: Math.max(toSatang(totals.total) - invoice.paidSatang, 0),
+            status: nextStatus,
+            updatedAt: new Date(),
+          })
+          .where(eq(invoices.id, invoice.id));
+
+        await db.insert(invoiceAuditLogs).values({
+          organizationId,
+          invoiceId: invoice.id,
+          actorUserId: user.appUserId,
+          action: "delete_item_via_meter_delete",
+          reason: "ลบรายการค่าไฟเนื่องจากลบเลขมิเตอร์ต้นทาง และปรับยอดรวมใหม่",
+        });
+      }
+      
+      revalidatePath(`/print/invoice/${invoice.id}`);
+    }
+  }
+
+  // 3. Delete the meter reading row
+  await db
+    .delete(meterReadings)
+    .where(and(eq(meterReadings.id, meterReadingId), eq(meterReadings.organizationId, organizationId)));
+
+  revalidatePath("/");
+  return { ok: true, message: "ลบเลขมิเตอร์และปรับปรุงใบแจ้งหนี้ที่เกี่ยวข้องแล้ว" };
+}

@@ -1,0 +1,3729 @@
+[
+  {
+    "source": "ค่าไฟ JT วัชรเกียรติ.xlsx",
+    "sheet": "1.69.1",
+    "invoiceNo": "2569/06/01",
+    "tenantCode": "BNT",
+    "tenantName": "บริษัท บีเอ็นที เอ็กซ์เพรส จำกัด (สำนักงานใหญ่)",
+    "tenantTaxId": "0505562019812",
+    "tenantAddress": "เลขที่ 8 หมู่ที่ 4 ตำบล หนองป่าครั่ง\nอำเภอ เมืองเชียงใหม่ จังหวัด เชียงใหม่ 50000",
+    "type": "electricity",
+    "issueDate": "2026-01-22",
+    "dueDate": "2026-01-29",
+    "periodStart": "2026-01-01",
+    "periodEnd": "2026-01-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "electricity",
+        "description": "ค่าไฟฟ้าประจำเดือน มกราคม 2569",
+        "quantity": 479,
+        "unitPrice": 4.9,
+        "amount": 2347.1000000000004,
+        "meter": {
+          "previousReading": 43900,
+          "currentReading": 44379,
+          "usageUnits": 479,
+          "rate": 4.9
+        }
+      }
+    ]
+  },
+  {
+    "source": "ค่าไฟ JT วัชรเกียรติ.xlsx",
+    "sheet": "1.69.2",
+    "invoiceNo": "2569/07/01",
+    "tenantCode": "BNT",
+    "tenantName": "บริษัท บีเอ็นที เอ็กซ์เพรส จำกัด (สำนักงานใหญ่)",
+    "tenantTaxId": "0505562019812",
+    "tenantAddress": "เลขที่ 8 หมู่ที่ 4 ตำบล หนองป่าครั่ง\nอำเภอ เมืองเชียงใหม่ จังหวัด เชียงใหม่ 50000",
+    "type": "electricity",
+    "issueDate": "2026-01-22",
+    "dueDate": "2026-01-29",
+    "periodStart": "2026-01-01",
+    "periodEnd": "2026-01-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "electricity",
+        "description": "ค่าไฟฟ้าประจำเดือน มกราคม 2569",
+        "quantity": 939,
+        "unitPrice": 4.9,
+        "amount": 4601.1,
+        "meter": {
+          "previousReading": 7828,
+          "currentReading": 8767,
+          "usageUnits": 939,
+          "rate": 4.9
+        }
+      }
+    ]
+  },
+  {
+    "source": "ค่าไฟ JT วัชรเกียรติ.xlsx",
+    "sheet": "Sheet2",
+    "invoiceNo": "2569/07/02",
+    "tenantCode": "BNT",
+    "tenantName": "บริษัท บีเอ็นที เอ็กซ์เพรส จำกัด (สำนักงานใหญ่)",
+    "tenantTaxId": "0505562019812",
+    "tenantAddress": "เลขที่ 8 หมู่ที่ 4 ตำบล หนองป่าครั่ง\nอำเภอ เมืองเชียงใหม่ จังหวัด เชียงใหม่ 50000",
+    "type": "electricity",
+    "issueDate": "2026-02-23",
+    "dueDate": "2026-03-02",
+    "periodStart": "2026-02-01",
+    "periodEnd": "2026-02-28",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "electricity",
+        "description": "ค่าไฟฟ้าประจำเดือน กุมภาพันธ์ 2569",
+        "quantity": 1001,
+        "unitPrice": 4.9,
+        "amount": 4904.900000000001,
+        "meter": {
+          "previousReading": 8767,
+          "currentReading": 9768,
+          "usageUnits": 1001,
+          "rate": 4.9
+        }
+      }
+    ]
+  },
+  {
+    "source": "ค่าไฟ JT วัชรเกียรติ.xlsx",
+    "sheet": "2.69.1",
+    "invoiceNo": "2569/06/02",
+    "tenantCode": "BNT",
+    "tenantName": "บริษัท บีเอ็นที เอ็กซ์เพรส จำกัด (สำนักงานใหญ่)",
+    "tenantTaxId": "0505562019812",
+    "tenantAddress": "เลขที่ 8 หมู่ที่ 4 ตำบล หนองป่าครั่ง\nอำเภอ เมืองเชียงใหม่ จังหวัด เชียงใหม่ 50000",
+    "type": "electricity",
+    "issueDate": "2026-02-23",
+    "dueDate": "2026-03-02",
+    "periodStart": "2026-02-01",
+    "periodEnd": "2026-02-28",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "electricity",
+        "description": "ค่าไฟฟ้าประจำเดือน กุมภาพันธ์ 2569",
+        "quantity": 615,
+        "unitPrice": 4.9,
+        "amount": 3013.5,
+        "meter": {
+          "previousReading": 44379,
+          "currentReading": 44994,
+          "usageUnits": 615,
+          "rate": 4.9
+        }
+      }
+    ]
+  },
+  {
+    "source": "ค่าไฟ JT วัชรเกียรติ.xlsx",
+    "sheet": "3.69.1",
+    "invoiceNo": "2569/07/03",
+    "tenantCode": "BNT",
+    "tenantName": "บริษัท บีเอ็นที เอ็กซ์เพรส จำกัด (สำนักงานใหญ่)",
+    "tenantTaxId": "0505562019812",
+    "tenantAddress": "เลขที่ 8 หมู่ที่ 4 ตำบล หนองป่าครั่ง\nอำเภอ เมืองเชียงใหม่ จังหวัด เชียงใหม่ 50000",
+    "type": "electricity",
+    "issueDate": "2026-03-23",
+    "dueDate": "2026-03-30",
+    "periodStart": "2026-03-01",
+    "periodEnd": "2026-03-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "electricity",
+        "description": "ค่าไฟฟ้าประจำเดือน มีนาคม 2569",
+        "quantity": 1197,
+        "unitPrice": 4.9,
+        "amount": 5865.3,
+        "meter": {
+          "previousReading": 9768,
+          "currentReading": 10965,
+          "usageUnits": 1197,
+          "rate": 4.9
+        }
+      }
+    ]
+  },
+  {
+    "source": "ค่าไฟ JT วัชรเกียรติ.xlsx",
+    "sheet": "3.69.2",
+    "invoiceNo": "2569/06/03",
+    "tenantCode": "BNT",
+    "tenantName": "บริษัท บีเอ็นที เอ็กซ์เพรส จำกัด (สำนักงานใหญ่)",
+    "tenantTaxId": "0505562019812",
+    "tenantAddress": "เลขที่ 8 หมู่ที่ 4 ตำบล หนองป่าครั่ง\nอำเภอ เมืองเชียงใหม่ จังหวัด เชียงใหม่ 50000",
+    "type": "electricity",
+    "issueDate": "2026-03-23",
+    "dueDate": "2026-03-30",
+    "periodStart": "2026-03-01",
+    "periodEnd": "2026-03-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "electricity",
+        "description": "ค่าไฟฟ้าประจำเดือน มีนาคม 2569",
+        "quantity": 696,
+        "unitPrice": 4.9,
+        "amount": 3410.4,
+        "meter": {
+          "previousReading": 44994,
+          "currentReading": 45690,
+          "usageUnits": 696,
+          "rate": 4.9
+        }
+      }
+    ]
+  },
+  {
+    "source": "ค่าไฟ JT วัชรเกียรติ.xlsx",
+    "sheet": "4.69.1",
+    "invoiceNo": "2569/07/04",
+    "tenantCode": "BNT",
+    "tenantName": "บริษัท บีเอ็นที เอ็กซ์เพรส จำกัด (สำนักงานใหญ่)",
+    "tenantTaxId": "0505562019812",
+    "tenantAddress": "เลขที่ 8 หมู่ที่ 4 ตำบล หนองป่าครั่ง\nอำเภอ เมืองเชียงใหม่ จังหวัด เชียงใหม่ 50000",
+    "type": "electricity",
+    "issueDate": "2026-04-23",
+    "dueDate": "2026-04-30",
+    "periodStart": "2026-04-01",
+    "periodEnd": "2026-04-30",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "electricity",
+        "description": "ค่าไฟฟ้าประจำเดือน เมษายน 2569",
+        "quantity": 1196,
+        "unitPrice": 4.9,
+        "amount": 5860.400000000001,
+        "meter": {
+          "previousReading": 10965,
+          "currentReading": 12161,
+          "usageUnits": 1196,
+          "rate": 4.9
+        }
+      }
+    ]
+  },
+  {
+    "source": "ค่าไฟ JT วัชรเกียรติ.xlsx",
+    "sheet": "4.69.2",
+    "invoiceNo": "2569/06/04",
+    "tenantCode": "BNT",
+    "tenantName": "บริษัท บีเอ็นที เอ็กซ์เพรส จำกัด (สำนักงานใหญ่)",
+    "tenantTaxId": "0505562019812",
+    "tenantAddress": "เลขที่ 8 หมู่ที่ 4 ตำบล หนองป่าครั่ง\nอำเภอ เมืองเชียงใหม่ จังหวัด เชียงใหม่ 50000",
+    "type": "electricity",
+    "issueDate": "2026-04-23",
+    "dueDate": "2026-04-30",
+    "periodStart": "2026-04-01",
+    "periodEnd": "2026-04-30",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "electricity",
+        "description": "ค่าไฟฟ้าประจำเดือน เมษายน 2569",
+        "quantity": 1035,
+        "unitPrice": 4.9,
+        "amount": 5071.5,
+        "meter": {
+          "previousReading": 45690,
+          "currentReading": 46725,
+          "usageUnits": 1035,
+          "rate": 4.9
+        }
+      }
+    ]
+  },
+  {
+    "source": "ค่าไฟ JT วัชรเกียรติ.xlsx",
+    "sheet": "Sheet1",
+    "invoiceNo": "2568/10",
+    "tenantCode": "BNT",
+    "tenantName": "บริษัท บีเอ็นที เอ็กซ์เพรส จำกัด (สำนักงานใหญ่)",
+    "tenantTaxId": "0505562019812",
+    "tenantAddress": "เลขที่ 8 หมู่ที่ 4 ตำบล หนองป่าครั่ง\nอำเภอ เมืองเชียงใหม่ จังหวัด เชียงใหม่ 50000",
+    "type": "rent",
+    "issueDate": "2025-10-01",
+    "dueDate": "2025-10-08",
+    "periodStart": "2025-10-01",
+    "periodEnd": "2025-10-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "rent",
+        "description": "ค่าเช่า ประจำเดือน ตุลาคม 2568",
+        "quantity": 1,
+        "unitPrice": 25000.0,
+        "amount": 25000.0
+      }
+    ]
+  },
+  {
+    "source": "ค่าไฟ JT วัชรเกียรติ.xlsx",
+    "sheet": "5.69.1",
+    "invoiceNo": "2569/07/05",
+    "tenantCode": "BNT",
+    "tenantName": "บริษัท บีเอ็นที เอ็กซ์เพรส จำกัด (สำนักงานใหญ่)",
+    "tenantTaxId": "0505562019812",
+    "tenantAddress": "เลขที่ 8 หมู่ที่ 4 ตำบล หนองป่าครั่ง\nอำเภอ เมืองเชียงใหม่ จังหวัด เชียงใหม่ 50000",
+    "type": "electricity",
+    "issueDate": "2026-05-23",
+    "dueDate": "2026-05-30",
+    "periodStart": "2026-05-01",
+    "periodEnd": "2026-05-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "electricity",
+        "description": "ค่าไฟฟ้าประจำเดือน พฤษภาคม 2569",
+        "quantity": 1443,
+        "unitPrice": 4.9,
+        "amount": 7070.700000000001,
+        "meter": {
+          "previousReading": 2161,
+          "currentReading": 3604,
+          "usageUnits": 1443,
+          "rate": 4.9
+        }
+      }
+    ]
+  },
+  {
+    "source": "ค่าไฟ JT วัชรเกียรติ.xlsx",
+    "sheet": "5.69.2",
+    "invoiceNo": "2569/06/05",
+    "tenantCode": "BNT",
+    "tenantName": "บริษัท บีเอ็นที เอ็กซ์เพรส จำกัด (สำนักงานใหญ่)",
+    "tenantTaxId": "0505562019812",
+    "tenantAddress": "เลขที่ 8 หมู่ที่ 4 ตำบล หนองป่าครั่ง\nอำเภอ เมืองเชียงใหม่ จังหวัด เชียงใหม่ 50000",
+    "type": "electricity",
+    "issueDate": "2026-05-23",
+    "dueDate": "2026-05-30",
+    "periodStart": "2026-05-01",
+    "periodEnd": "2026-05-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "electricity",
+        "description": "ค่าไฟฟ้าประจำเดือน พฤษภาคม 2569",
+        "quantity": 1262,
+        "unitPrice": 4.9,
+        "amount": 6183.8,
+        "meter": {
+          "previousReading": 46725,
+          "currentReading": 47987,
+          "usageUnits": 1262,
+          "rate": 4.9
+        }
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "มีค67",
+    "invoiceNo": "2567/04",
+    "tenantCode": "LAZADA",
+    "tenantName": "บริษัท ลาซาด้า เอ็กซ์เพรส จำกัด (สำนักงานใหญ่)",
+    "tenantTaxId": "0-1055-58080-77-8",
+    "tenantAddress": "689 อาคารภิรัช ชั้นที่ 29 ห้องเลขที่ 2904-2906 ซ.สุขุมวิท 35\nถ.สุขุมวิท แขวงคลองตันเหนือ เขตวัฒนา กรุงเทพมหานคร 10110",
+    "type": "electricity",
+    "issueDate": "2024-04-04",
+    "dueDate": "2024-04-11",
+    "periodStart": "2024-02-01",
+    "periodEnd": "2024-02-29",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "electricity",
+        "description": "ค่าไฟฟ้าประจำเดือน กุมภาพันธ์ 2567",
+        "quantity": 136,
+        "unitPrice": 7.0,
+        "amount": 952.0
+      },
+      {
+        "type": "electricity",
+        "description": "ค่าไฟฟ้าประจำเดือน มีนาคม 2567",
+        "quantity": 1239,
+        "unitPrice": 7.0,
+        "amount": 8673.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "Sheet1",
+    "invoiceNo": "2567/05",
+    "tenantCode": "LAZADA",
+    "tenantName": "บริษัท ลาซาด้า เอ็กซ์เพรส จำกัด (สำนักงานใหญ่)",
+    "tenantTaxId": "0-1055-58080-77-8",
+    "tenantAddress": "689 อาคารภิรัช ชั้นที่ 29 ห้องเลขที่ 2904-2906 ซ.สุขุมวิท 35\nถ.สุขุมวิท แขวงคลองตันเหนือ เขตวัฒนา กรุงเทพมหานคร 10110",
+    "type": "mixed",
+    "issueDate": "2024-04-23",
+    "dueDate": "2024-04-30",
+    "periodStart": "2024-04-01",
+    "periodEnd": "2024-04-30",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "electricity",
+        "description": "ค่าไฟฟ้าประจำเดือน เมษายน 2567",
+        "quantity": 1809,
+        "unitPrice": 7.0,
+        "amount": 12663.0
+      },
+      {
+        "type": "other",
+        "description": "ค่าน้ำประปาประจำเดือน กุมภาพันธ์ 2567",
+        "quantity": 5,
+        "unitPrice": 25.0,
+        "amount": 125.0
+      },
+      {
+        "type": "other",
+        "description": "ค่าน้ำประปาประจำเดือน มีนาคม 2567",
+        "quantity": 10,
+        "unitPrice": 25.0,
+        "amount": 250.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "พค 67",
+    "invoiceNo": "11/06",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2024-06-03",
+    "dueDate": "2024-06-10",
+    "periodStart": "2024-05-01",
+    "periodEnd": "2024-05-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 2 พฤษภาคม 67",
+        "quantity": 18000,
+        "unitPrice": 0.35,
+        "amount": 6300.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 4 พฤษภาคม 67",
+        "quantity": 22000,
+        "unitPrice": 0.35,
+        "amount": 7699.999999999999
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 7 พฤษภาคม 67",
+        "quantity": 25000,
+        "unitPrice": 0.35,
+        "amount": 8750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 9 พฤษภาคม 67",
+        "quantity": 18000,
+        "unitPrice": 0.35,
+        "amount": 6300.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 11 พฤษภาคม 67",
+        "quantity": 22000,
+        "unitPrice": 0.35,
+        "amount": 7699.999999999999
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 13 พฤษภาคม 67",
+        "quantity": 16000,
+        "unitPrice": 0.35,
+        "amount": 5600.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 16 พฤษภาคม 67",
+        "quantity": 21000,
+        "unitPrice": 0.35,
+        "amount": 7349.999999999999
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 18 พฤษภาคม 67",
+        "quantity": 24000,
+        "unitPrice": 0.35,
+        "amount": 8400.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 20 พฤษภาคม 67",
+        "quantity": 19000,
+        "unitPrice": 0.35,
+        "amount": 6650.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 23 พฤษภาคม 67",
+        "quantity": 22000,
+        "unitPrice": 0.35,
+        "amount": 7699.999999999999
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 26 พฤษภาคม 67",
+        "quantity": 22000,
+        "unitPrice": 0.35,
+        "amount": 7699.999999999999
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 27 พฤษภาคม 67",
+        "quantity": 18000,
+        "unitPrice": 0.35,
+        "amount": 6300.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 28 พฤษภาคม 67",
+        "quantity": 7000,
+        "unitPrice": 0.35,
+        "amount": 2450.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 30 พฤษภาคม 67",
+        "quantity": 18000,
+        "unitPrice": 0.35,
+        "amount": 6300.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "Sheet2",
+    "invoiceNo": "11/07",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2024-07-02",
+    "dueDate": "2024-07-09",
+    "periodStart": "2024-06-01",
+    "periodEnd": "2024-06-30",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 1 มิถุนายน 67",
+        "quantity": 20000,
+        "unitPrice": 0.35,
+        "amount": 7000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 3 มิถุนายน 67",
+        "quantity": 18000,
+        "unitPrice": 0.35,
+        "amount": 6300.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 6 มิถุนายน 67",
+        "quantity": 20000,
+        "unitPrice": 0.35,
+        "amount": 7000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 9 มิถุนายน 67",
+        "quantity": 25000,
+        "unitPrice": 0.35,
+        "amount": 8750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 12 มิถุนายน 67",
+        "quantity": 15000,
+        "unitPrice": 0.35,
+        "amount": 5250.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 13 มิถุนายน 67",
+        "quantity": 20000,
+        "unitPrice": 0.35,
+        "amount": 7000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 15 มิถุนายน 67",
+        "quantity": 21000,
+        "unitPrice": 0.35,
+        "amount": 7349.999999999999
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 17 มิถุนายน 67",
+        "quantity": 17000,
+        "unitPrice": 0.35,
+        "amount": 5950.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 19 มิถุนายน 67",
+        "quantity": 19000,
+        "unitPrice": 0.35,
+        "amount": 6650.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 21 มิถุนายน 67",
+        "quantity": 18000,
+        "unitPrice": 0.35,
+        "amount": 6300.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 24 มิถุนายน 67",
+        "quantity": 22000,
+        "unitPrice": 0.35,
+        "amount": 7699.999999999999
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 26 มิถุนายน 67",
+        "quantity": 16000,
+        "unitPrice": 0.35,
+        "amount": 5600.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 28 มิถุนายน 67",
+        "quantity": 16000,
+        "unitPrice": 0.35,
+        "amount": 5600.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "กค 67",
+    "invoiceNo": "11/07",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2024-08-01",
+    "dueDate": "2024-08-08",
+    "periodStart": "2024-07-01",
+    "periodEnd": "2024-07-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 1 กรกฎาคม 67",
+        "quantity": 21000,
+        "unitPrice": 0.35,
+        "amount": 7349.999999999999
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 2 กรกฎาคม 67",
+        "quantity": 20000,
+        "unitPrice": 0.35,
+        "amount": 7000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 4 กรกฎาคม 67",
+        "quantity": 19000,
+        "unitPrice": 0.35,
+        "amount": 6650.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 6 กรกฎาคม 67",
+        "quantity": 22000,
+        "unitPrice": 0.35,
+        "amount": 7699.999999999999
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 9 กรกฎาคม 67",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 12 กรกฎาคม 67",
+        "quantity": 28000,
+        "unitPrice": 0.25,
+        "amount": 7000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 14 กรกฎาคม 67",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 17 กรกฎาคม 67",
+        "quantity": 23000,
+        "unitPrice": 0.25,
+        "amount": 5750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 19 กรกฎาคม 67",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 20 กรกฎาคม 67",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 23 กรกฎาคม 67",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 25 กรกฎาคม 67",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 27 กรกฎาคม 67",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 29 กรกฎาคม 67",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 31 กรกฎาคม 67",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "Sheet3",
+    "invoiceNo": "11/08",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2024-09-01",
+    "dueDate": "2024-09-08",
+    "periodStart": "2024-08-01",
+    "periodEnd": "2024-08-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 2 สิงหาคม 67",
+        "quantity": 23000,
+        "unitPrice": 0.25,
+        "amount": 5750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 6 สิงหาคม 67",
+        "quantity": 22000,
+        "unitPrice": 0.25,
+        "amount": 5500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 8 สิงหาคม 67",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 11 สิงหาคม 67",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 12 สิงหาคม 67",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 15 สิงหาคม 67",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 17 สิงหาคม 67",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 20 สิงหาคม 67",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 23 สิงหาคม 67",
+        "quantity": 27000,
+        "unitPrice": 0.25,
+        "amount": 6750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 26 สิงหาคม 67",
+        "quantity": 23000,
+        "unitPrice": 0.25,
+        "amount": 5750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 28 สิงหาคม 67",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 30 สิงหาคม 67",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "กย 67",
+    "invoiceNo": "11/09",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2024-10-04",
+    "dueDate": "2024-10-11",
+    "periodStart": "2024-09-01",
+    "periodEnd": "2024-09-30",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 2 กันยายน 67",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 5 กันยายน 67",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที 7 กันยายน 67",
+        "quantity": 21000,
+        "unitPrice": 0.25,
+        "amount": 5250.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 9 กันยายน 67",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 12 กันยายน 67",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 14 กันยายน 67",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 17 กันยายน 67",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 19 กันยายน 67",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 21 กันยายน 67",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 23 กันยายน 67",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 26 กันยายน 67",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 28 กันยายน 67",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 30 กันยายน 67",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "ตค 67",
+    "invoiceNo": "11/10",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2024-11-01",
+    "dueDate": "2024-11-08",
+    "periodStart": "2024-10-01",
+    "periodEnd": "2024-10-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 2 ตุลาคม 67",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 4 ตุลาคม 67",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 7 ตุลาคม 67",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 9 ตุลาคม 67",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 11 ตุลาคม 67",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 14 ตุลาคม 67",
+        "quantity": 17000,
+        "unitPrice": 0.25,
+        "amount": 4250.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 16 ตุลาคม 67",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 18 ตุลาคม 67",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 21 ตุลาคม 67",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 23 ตุลาคม 67",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 25 ตุลาคม 67",
+        "quantity": 24000,
+        "unitPrice": 0.25,
+        "amount": 6000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 28 ตุลาคม 67",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 29 ตุลาคม 67",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "พย 67",
+    "invoiceNo": "11/11",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2024-12-02",
+    "dueDate": "2024-12-09",
+    "periodStart": "2024-11-01",
+    "periodEnd": "2024-11-30",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 1 พฤศจิกายน 67",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 2 พฤศจิกายน 67",
+        "quantity": 7000,
+        "unitPrice": 0.25,
+        "amount": 1750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 4 พฤศจิกายน 67",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 6 พฤศจิกายน 67",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 9 พฤศจิกายน 67",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 11 พฤศจิกายน 67",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 13 พฤศจิกายน 67",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 14 พฤศจิกายน 67",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 16 พฤศจิกายน 67",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 18 พฤศจิกายน 67",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 20 พฤศจิกายน 67",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 22 พฤศจิกายน 67",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 25 พฤศจิกายน 67",
+        "quantity": 21000,
+        "unitPrice": 0.25,
+        "amount": 5250.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 27 พฤศจิกายน 67",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 29 พฤศจิกายน 67",
+        "quantity": 26000,
+        "unitPrice": 0.25,
+        "amount": 6500.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "ธค 67",
+    "invoiceNo": "11/12",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-01-03",
+    "dueDate": "2025-01-10",
+    "periodStart": "2024-12-01",
+    "periodEnd": "2024-12-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 2 ธันวาคม 67",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 5 ธันวาคม 67",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 6 ธันวาคม 67",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 9 ธันวาคม 67",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 11 ธันวาคม 67",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 13 ธันวาคม 67",
+        "quantity": 17000,
+        "unitPrice": 0.25,
+        "amount": 4250.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 14 ธันวาคม 67",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 16 ธันวาคม 67",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 19 ธันวาคม 67",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 21 ธันวาคม 67",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 23 ธันวาคม 67",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 25 ธันวาคม 67",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 27 ธันวาคม 67",
+        "quantity": 27000,
+        "unitPrice": 0.25,
+        "amount": 6750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 30 ธันวาคม 67",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 31 ธันวาคม 67",
+        "quantity": 21000,
+        "unitPrice": 0.25,
+        "amount": 5250.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "มค 68",
+    "invoiceNo": "11/68/1",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-02-03",
+    "dueDate": "2025-02-10",
+    "periodStart": "2025-01-01",
+    "periodEnd": "2025-01-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 4 มกราคม 68",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 6 มกราคม 68",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 8 มกราคม 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 10 มกราคม 68",
+        "quantity": 25000,
+        "unitPrice": 0.25,
+        "amount": 6250.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 13 มกราคม 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 16 มกราคม 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 18 มกราคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 20 มกราคม 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 22 มกราคม 68",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 24 มกราคม 68",
+        "quantity": 22000,
+        "unitPrice": 0.25,
+        "amount": 5500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 27 มกราคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 29 มกราคม 68",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 31 มกราคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "กพ68",
+    "invoiceNo": "11/68/2",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-03-01",
+    "dueDate": "2025-03-08",
+    "periodStart": "2025-02-01",
+    "periodEnd": "2025-02-28",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 3 กุมภาพันธ์ 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 6 กุมภาพันธ์ 68",
+        "quantity": 17000,
+        "unitPrice": 0.25,
+        "amount": 4250.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 8 กุมภาพันธ์ 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 10 กุมภาพันธ์ 68",
+        "quantity": 14000,
+        "unitPrice": 0.25,
+        "amount": 3500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 12 กุมภาพันธ์ 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 14 กุมภาพันธ์ 68",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 17 กุมภาพันธ์ 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 19 กุมภาพันธ์ 68",
+        "quantity": 14000,
+        "unitPrice": 0.25,
+        "amount": 3500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 22 กุมภาพันธ์ 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 24 กุมภาพันธ์ 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 26 กุมภาพันธ์ 68",
+        "quantity": 11000,
+        "unitPrice": 0.25,
+        "amount": 2750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 27 กุมภาพันธ์ 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "มีค 68",
+    "invoiceNo": "11/68/3",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-04-01",
+    "dueDate": "2025-04-08",
+    "periodStart": "2025-03-01",
+    "periodEnd": "2025-03-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 1 มีนาคม 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 3 มีนาคม 68",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 6 มีนาคม 68",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 8 มีนาคม 68",
+        "quantity": 14000,
+        "unitPrice": 0.25,
+        "amount": 3500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 10 มีนาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 13 มีนาคม 68",
+        "quantity": 14000,
+        "unitPrice": 0.25,
+        "amount": 3500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 15 มีนาคม 68",
+        "quantity": 22000,
+        "unitPrice": 0.25,
+        "amount": 5500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 17 มีนาคม 68",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 19 มีนาคม 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 21 มีนาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 22 มีนาคม 68",
+        "quantity": 8000,
+        "unitPrice": 0.25,
+        "amount": 2000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 24 มีนาคม 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 26 มีนาคม 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 28 มีนาคม 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 31 มีนาคม 68",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "เมษ 68",
+    "invoiceNo": "11/68/4",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-05-02",
+    "dueDate": "2025-05-09",
+    "periodStart": "2025-04-01",
+    "periodEnd": "2025-04-30",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 2 เมษายน 68",
+        "quantity": 8000,
+        "unitPrice": 0.25,
+        "amount": 2000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 4 เมษายน 68",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 5 เมษายน 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 7 เมษายน 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 9 เมษายน 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 10 เมษายน 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 12 เมษายน 68",
+        "quantity": 30000,
+        "unitPrice": 0.25,
+        "amount": 7500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 16 เมษายน 68",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 18 เมษายน 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 21 เมษายน 68",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 23 เมษายน 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 25 เมษายน 68",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 28 เมษายน 68",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 30 เมษายน 68",
+        "quantity": 11000,
+        "unitPrice": 0.25,
+        "amount": 2750.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "พค 68",
+    "invoiceNo": "11/68/5",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-06-02",
+    "dueDate": "2025-06-09",
+    "periodStart": "2025-05-01",
+    "periodEnd": "2025-05-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 2 พฤษภาคม 68",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 5 พฤษภาคม 68",
+        "quantity": 22000,
+        "unitPrice": 0.25,
+        "amount": 5500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 7 พฤษภาคม 68",
+        "quantity": 8000,
+        "unitPrice": 0.25,
+        "amount": 2000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 9 พฤษภาคม 68",
+        "quantity": 24000,
+        "unitPrice": 0.25,
+        "amount": 6000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 12 พฤษภาคม 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 14 พฤษภาคม 68",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 17 พฤษภาคม 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 19 พฤษภาคม 68",
+        "quantity": 22000,
+        "unitPrice": 0.25,
+        "amount": 5500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 21 พฤษภาคม 68",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 23 พฤษภาคม 68",
+        "quantity": 23000,
+        "unitPrice": 0.25,
+        "amount": 5750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 24 พฤษภาคม 68",
+        "quantity": 8000,
+        "unitPrice": 0.25,
+        "amount": 2000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 26 พฤษภาคม 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 28 พฤษภาคม 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 29 พฤษภาคม 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 31 พฤษภาคม 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "มิย 68",
+    "invoiceNo": "11/68/6",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-07-03",
+    "dueDate": "2025-07-10",
+    "periodStart": "2025-06-01",
+    "periodEnd": "2025-06-30",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 2 มิถุนายน 68",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 4 มิถุนายน 68",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 6 มิถุนายน 68",
+        "quantity": 22000,
+        "unitPrice": 0.25,
+        "amount": 5500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 7 มิถุนายน 68",
+        "quantity": 8000,
+        "unitPrice": 0.25,
+        "amount": 2000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 9 มิถุนายน 68",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 11 มิถุนายน 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 14 มิถุนายน 68",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 16 มิถุนายน 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 18 มิถุนายน 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 21 มิถุนายน 68",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 23 มิถุนายน 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 25 มิถุนายน 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 27 มิถุนายน 68",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 30 มิถุนายน 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "กค 68",
+    "invoiceNo": "11/68/7",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-08-02",
+    "dueDate": "2025-08-09",
+    "periodStart": "2025-07-01",
+    "periodEnd": "2025-07-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 2 กรกฎาคม 68",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 4 กรกฎาคม 68",
+        "quantity": 8000,
+        "unitPrice": 0.25,
+        "amount": 2000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 5 กรกฎาคม 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 7 กรกฎาคม 68",
+        "quantity": 13000,
+        "unitPrice": 0.25,
+        "amount": 3250.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 9 กรกฎาคม 68",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 11 กรกฎาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 14 กรกฎาคม 68",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 16 กรกฎาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 18 กรกฎาคม 68",
+        "quantity": 22000,
+        "unitPrice": 0.25,
+        "amount": 5500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 21 กรกฎาคม 68",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 23 กรกฎาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 27 กรกฎาคม 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 28 กรกฎาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 30 กรกฎาคม 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "สค 68",
+    "invoiceNo": "11/68/8",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-09-01",
+    "dueDate": "2025-09-08",
+    "periodStart": "2025-08-01",
+    "periodEnd": "2025-08-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 1 สิงหาคม 68",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 4 สิงหาคม 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 6 สิงหาคม 68",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 8 สิงหาคม 68",
+        "quantity": 17000,
+        "unitPrice": 0.25,
+        "amount": 4250.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 11 สิงหาคม 68",
+        "quantity": 22000,
+        "unitPrice": 0.25,
+        "amount": 5500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 13 สิงหาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 15 สิงหาคม 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 18 สิงหาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 21 สิงหาคม 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 23 สิงหาคม 68",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 26 สิงหาคม 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 28 สิงหาคม 68",
+        "quantity": 21000,
+        "unitPrice": 0.25,
+        "amount": 5250.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 30 สิงหาคม 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "กย 68",
+    "invoiceNo": "11/68/9",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-10-02",
+    "dueDate": "2025-10-09",
+    "periodStart": "2025-09-01",
+    "periodEnd": "2025-09-30",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 3 กันยายน 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 6 กันยายน 68",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 9 กันยายน 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 11 กันยายน 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 13 กันยายน 68",
+        "quantity": 14000,
+        "unitPrice": 0.25,
+        "amount": 3500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 16 กันยายน 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 18 กันยายน 68",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 19 กันยายน 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 22 กันยายน 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 24 กันยายน 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 26 กันยายน 68",
+        "quantity": 22000,
+        "unitPrice": 0.25,
+        "amount": 5500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 29 กันยายน 68",
+        "quantity": 14000,
+        "unitPrice": 0.25,
+        "amount": 3500.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "Sheet5",
+    "invoiceNo": "11/68/10",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-11-01",
+    "dueDate": "2025-11-08",
+    "periodStart": "2025-10-01",
+    "periodEnd": "2025-10-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 2 ตุลาคม 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 4 ตุลาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 6 ตุลาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 8 ตุลาคม 68",
+        "quantity": 11000,
+        "unitPrice": 0.25,
+        "amount": 2750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 10 ตุลาคม 68",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 13 ตุลาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 15 ตุลาคม 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 17 ตุลาคม 68",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 20 ตุลาคม 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 22 ตุลาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 24 ตุลาคม 68",
+        "quantity": 17000,
+        "unitPrice": 0.25,
+        "amount": 4250.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 27 ตุลาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 29 ตุลาคม 68",
+        "quantity": 14000,
+        "unitPrice": 0.25,
+        "amount": 3500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 31 ตุลาคม 68",
+        "quantity": 22000,
+        "unitPrice": 0.25,
+        "amount": 5500.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "Sheet4",
+    "invoiceNo": "11/68/11",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-12-07",
+    "dueDate": "2025-12-14",
+    "periodStart": "2025-11-01",
+    "periodEnd": "2025-11-30",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 3 พฤศจิกายน 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 6 พฤศจิกายน 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 8 พฤศจิกายน 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 10 พฤศจิกายน 68",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 13 พฤศจิกายน 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 15 พฤศจิกายน 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 19 พฤศจิกายน 68",
+        "quantity": 13000,
+        "unitPrice": 0.25,
+        "amount": 3250.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 22 พฤศจิกายน 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 24 พฤศจิกายน 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 26 พฤศจิกายน 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 28 พฤศจิกายน 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "Sheet6",
+    "invoiceNo": "11/68/12",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-12-31",
+    "dueDate": "2026-01-07",
+    "periodStart": "2025-12-01",
+    "periodEnd": "2025-12-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 1 ธันวาคม 68",
+        "quantity": 23000,
+        "unitPrice": 0.25,
+        "amount": 5750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 3 ธันวาคม 68",
+        "quantity": 17000,
+        "unitPrice": 0.25,
+        "amount": 4250.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 5 ธันวาคม 68",
+        "quantity": 21000,
+        "unitPrice": 0.25,
+        "amount": 5250.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 8 ธันวาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 11 ธันวาคม 68",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 13 ธันวาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 15 ธันวาคม 68",
+        "quantity": 14000,
+        "unitPrice": 0.25,
+        "amount": 3500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 17 ธันวาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 20 ธันวาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 22 ธันวาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 24 ธันวาคม 68",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 26 ธันวาคม 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 29 ธันวาคม 68",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 30 ธันวาคม 68",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "Sheet7",
+    "invoiceNo": "11/69/01",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2026-02-02",
+    "dueDate": "2026-02-09",
+    "periodStart": "2026-01-01",
+    "periodEnd": "2026-01-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 2 มกราคม 69",
+        "quantity": 21000,
+        "unitPrice": 0.25,
+        "amount": 5250.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 5 มกราคม 69",
+        "quantity": 22000,
+        "unitPrice": 0.25,
+        "amount": 5500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 8 มกราคม 69",
+        "quantity": 21000,
+        "unitPrice": 0.25,
+        "amount": 5250.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 10 มกราคม 69",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 12 มกราคม 69",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 14 มกราคม 69",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 16 มกราคม 69",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 19 มกราคม 69",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 22 มกราคม 69",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 24 มกราคม 69",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 26 มกราคม 69",
+        "quantity": 12000,
+        "unitPrice": 0.25,
+        "amount": 3000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 28 มกราคม 69",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 30 มกราคม 69",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "Sheet8",
+    "invoiceNo": "11/69/02",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2026-03-12",
+    "dueDate": "2026-03-19",
+    "periodStart": "2026-02-01",
+    "periodEnd": "2026-02-28",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 2 กุมภาพันธ์ 69",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 7 กุมภาพันธ์ 69",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 9 กุมภาพันธ์ 69",
+        "quantity": 18000,
+        "unitPrice": 0.25,
+        "amount": 4500.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 12 กุมภาพันธ์ 69",
+        "quantity": 23000,
+        "unitPrice": 0.25,
+        "amount": 5750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 16 กุมภาพันธ์ 69",
+        "quantity": 19000,
+        "unitPrice": 0.25,
+        "amount": 4750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 18 กุมภาพันธ์ 69",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 20 กุมภาพันธ์ 69",
+        "quantity": 16000,
+        "unitPrice": 0.25,
+        "amount": 4000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 23 กุมภาพันธ์ 69",
+        "quantity": 24000,
+        "unitPrice": 0.25,
+        "amount": 6000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 26 กุมภาพันธ์ 69",
+        "quantity": 29000,
+        "unitPrice": 0.25,
+        "amount": 7250.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "Sheet9",
+    "invoiceNo": "11/69/03",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2026-04-01",
+    "dueDate": "2026-04-08",
+    "periodStart": "2026-03-01",
+    "periodEnd": "2026-03-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 2 มีนาคม 69",
+        "quantity": 15000,
+        "unitPrice": 0.25,
+        "amount": 3750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 4 มีนาคม 69",
+        "quantity": 24000,
+        "unitPrice": 0.25,
+        "amount": 6000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 5 มีนาคม 69",
+        "quantity": 21000,
+        "unitPrice": 0.25,
+        "amount": 5250.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 9 มีนาคม 69",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 11 มีนาคม 69",
+        "quantity": 27000,
+        "unitPrice": 0.25,
+        "amount": 6750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 14 มีนาคม 69",
+        "quantity": 23000,
+        "unitPrice": 0.25,
+        "amount": 5750.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 21 มีนาคม 69",
+        "quantity": 28000,
+        "unitPrice": 0.25,
+        "amount": 7000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 24 มีนาคม 69",
+        "quantity": 21000,
+        "unitPrice": 0.25,
+        "amount": 5250.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 26 มีนาคม 69",
+        "quantity": 20000,
+        "unitPrice": 0.25,
+        "amount": 5000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 29 มีนาคม 69",
+        "quantity": 24000,
+        "unitPrice": 0.25,
+        "amount": 6000.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 30 มีนาคม 69",
+        "quantity": 17000,
+        "unitPrice": 0.25,
+        "amount": 4250.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ สลกบาตร 2567.xlsx",
+    "sheet": "Sheet10",
+    "invoiceNo": "11/69/04",
+    "tenantCode": "TAIFAH",
+    "tenantName": "หจก. ใต้ฟ้าปิโตรเลียม",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2026-05-02",
+    "dueDate": "2026-05-09",
+    "periodStart": "2026-04-01",
+    "periodEnd": "2026-04-30",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 2 เมษายน 69",
+        "quantity": 18000,
+        "unitPrice": 0.29,
+        "amount": 5220.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 3 เมษายน 69",
+        "quantity": 16000,
+        "unitPrice": 0.29,
+        "amount": 4640.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 6 เมษายน 69",
+        "quantity": 20000,
+        "unitPrice": 0.29,
+        "amount": 5800.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 11 เมษายน 69",
+        "quantity": 14000,
+        "unitPrice": 0.29,
+        "amount": 4059.9999999999995
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 15 เมษายน 69",
+        "quantity": 24000,
+        "unitPrice": 0.29,
+        "amount": 6959.999999999999
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 17 เมษายน 69",
+        "quantity": 19000,
+        "unitPrice": 0.29,
+        "amount": 5510.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 20 เมษายน 69",
+        "quantity": 13000,
+        "unitPrice": 0.29,
+        "amount": 3769.9999999999995
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 22 เมษายน 69",
+        "quantity": 12000,
+        "unitPrice": 0.29,
+        "amount": 3479.9999999999995
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 24 เมษายน 69",
+        "quantity": 15000,
+        "unitPrice": 0.29,
+        "amount": 4350.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 27 เมษายน 69",
+        "quantity": 21000,
+        "unitPrice": 0.29,
+        "amount": 6090.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าขนส่งวันที่ 30 เมษายน 69",
+        "quantity": 24000,
+        "unitPrice": 0.29,
+        "amount": 6959.999999999999
+      }
+    ]
+  },
+  {
+    "source": "ค่าเที่ยวดาวไพศาล.xlsx",
+    "sheet": "เก่า2",
+    "invoiceNo": "DAOPAISAAN-2568-01",
+    "tenantCode": "DAOPAISAAN",
+    "tenantName": "ดาวไพศาล",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-02-01",
+    "dueDate": "2025-02-08",
+    "periodStart": "2025-01-01",
+    "periodEnd": "2025-01-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่ง 01/2568 จำนวน 20 เที่ยว",
+        "quantity": 760000,
+        "unitPrice": 0.17,
+        "amount": 129200.00000000001
+      }
+    ]
+  },
+  {
+    "source": "ค่าเที่ยวดาวไพศาล.xlsx",
+    "sheet": "เก่า2",
+    "invoiceNo": "DAOPAISAAN-2568-02",
+    "tenantCode": "DAOPAISAAN",
+    "tenantName": "ดาวไพศาล",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-03-01",
+    "dueDate": "2025-03-08",
+    "periodStart": "2025-02-01",
+    "periodEnd": "2025-02-28",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่ง 02/2568 จำนวน 19 เที่ยว",
+        "quantity": 722000,
+        "unitPrice": 0.17,
+        "amount": 122740.00000000001
+      }
+    ]
+  },
+  {
+    "source": "ค่าเที่ยวดาวไพศาล.xlsx",
+    "sheet": "เก่า2",
+    "invoiceNo": "DAOPAISAAN-2568-03",
+    "tenantCode": "DAOPAISAAN",
+    "tenantName": "ดาวไพศาล",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-04-01",
+    "dueDate": "2025-04-08",
+    "periodStart": "2025-03-01",
+    "periodEnd": "2025-03-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่ง 03/2568 จำนวน 19 เที่ยว",
+        "quantity": 722000,
+        "unitPrice": 0.17,
+        "amount": 122740.00000000001
+      }
+    ]
+  },
+  {
+    "source": "ค่าเที่ยวดาวไพศาล.xlsx",
+    "sheet": "เก่า2",
+    "invoiceNo": "DAOPAISAAN-2568-04",
+    "tenantCode": "DAOPAISAAN",
+    "tenantName": "ดาวไพศาล",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-05-01",
+    "dueDate": "2025-05-08",
+    "periodStart": "2025-04-01",
+    "periodEnd": "2025-04-30",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่ง 04/2568 จำนวน 18 เที่ยว",
+        "quantity": 684000,
+        "unitPrice": 0.17,
+        "amount": 116280.00000000001
+      }
+    ]
+  },
+  {
+    "source": "ค่าเที่ยวดาวไพศาล.xlsx",
+    "sheet": "เก่า2",
+    "invoiceNo": "DAOPAISAAN-2568-05",
+    "tenantCode": "DAOPAISAAN",
+    "tenantName": "ดาวไพศาล",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-06-01",
+    "dueDate": "2025-06-08",
+    "periodStart": "2025-05-01",
+    "periodEnd": "2025-05-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่ง 05/2568 จำนวน 21 เที่ยว",
+        "quantity": 798000,
+        "unitPrice": 0.17,
+        "amount": 135660.0
+      }
+    ]
+  },
+  {
+    "source": "ค่าเที่ยวดาวไพศาล.xlsx",
+    "sheet": "เก่า2",
+    "invoiceNo": "DAOPAISAAN-2568-06",
+    "tenantCode": "DAOPAISAAN",
+    "tenantName": "ดาวไพศาล",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-07-01",
+    "dueDate": "2025-07-08",
+    "periodStart": "2025-06-01",
+    "periodEnd": "2025-06-30",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่ง 06/2568 จำนวน 18 เที่ยว",
+        "quantity": 684000,
+        "unitPrice": 0.17,
+        "amount": 116280.00000000001
+      }
+    ]
+  },
+  {
+    "source": "ค่าเที่ยวดาวไพศาล.xlsx",
+    "sheet": "เก่า2",
+    "invoiceNo": "DAOPAISAAN-2568-07",
+    "tenantCode": "DAOPAISAAN",
+    "tenantName": "ดาวไพศาล",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-08-01",
+    "dueDate": "2025-08-08",
+    "periodStart": "2025-07-01",
+    "periodEnd": "2025-07-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่ง 07/2568 จำนวน 18 เที่ยว",
+        "quantity": 684000,
+        "unitPrice": 0.17,
+        "amount": 116280.00000000001
+      }
+    ]
+  },
+  {
+    "source": "ค่าเที่ยวดาวไพศาล.xlsx",
+    "sheet": "เก่า2",
+    "invoiceNo": "DAOPAISAAN-2568-08",
+    "tenantCode": "DAOPAISAAN",
+    "tenantName": "ดาวไพศาล",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-09-01",
+    "dueDate": "2025-09-08",
+    "periodStart": "2025-08-01",
+    "periodEnd": "2025-08-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่ง 08/2568 จำนวน 18 เที่ยว",
+        "quantity": 684000,
+        "unitPrice": 0.17,
+        "amount": 116280.00000000001
+      }
+    ]
+  },
+  {
+    "source": "ค่าเที่ยวดาวไพศาล.xlsx",
+    "sheet": "เก่า2",
+    "invoiceNo": "DAOPAISAAN-2568-09",
+    "tenantCode": "DAOPAISAAN",
+    "tenantName": "ดาวไพศาล",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-10-01",
+    "dueDate": "2025-10-08",
+    "periodStart": "2025-09-01",
+    "periodEnd": "2025-09-30",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่ง 09/2568 จำนวน 19 เที่ยว",
+        "quantity": 722000,
+        "unitPrice": 0.17,
+        "amount": 122740.00000000001
+      }
+    ]
+  },
+  {
+    "source": "ค่าเที่ยวดาวไพศาล.xlsx",
+    "sheet": "เก่า2",
+    "invoiceNo": "DAOPAISAAN-2568-10",
+    "tenantCode": "DAOPAISAAN",
+    "tenantName": "ดาวไพศาล",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-11-01",
+    "dueDate": "2025-11-08",
+    "periodStart": "2025-10-01",
+    "periodEnd": "2025-10-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่ง 10/2568 จำนวน 19 เที่ยว",
+        "quantity": 722000,
+        "unitPrice": 0.17,
+        "amount": 122740.00000000001
+      }
+    ]
+  },
+  {
+    "source": "ค่าเที่ยวดาวไพศาล.xlsx",
+    "sheet": "เก่า2",
+    "invoiceNo": "DAOPAISAAN-2568-11",
+    "tenantCode": "DAOPAISAAN",
+    "tenantName": "ดาวไพศาล",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2025-12-01",
+    "dueDate": "2025-12-08",
+    "periodStart": "2025-11-01",
+    "periodEnd": "2025-11-30",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่ง 11/2568 จำนวน 17 เที่ยว",
+        "quantity": 646000,
+        "unitPrice": 0.17,
+        "amount": 109820.00000000001
+      }
+    ]
+  },
+  {
+    "source": "ค่าเที่ยวดาวไพศาล.xlsx",
+    "sheet": "เก่า2",
+    "invoiceNo": "DAOPAISAAN-2568-12",
+    "tenantCode": "DAOPAISAAN",
+    "tenantName": "ดาวไพศาล",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2026-01-01",
+    "dueDate": "2026-01-08",
+    "periodStart": "2025-12-01",
+    "periodEnd": "2025-12-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 1 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 2 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 4 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 5 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 6 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 9 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 10 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 12 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 14 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 15 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 17 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 18 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 19 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 21 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 22 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 24 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 25 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 26 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 27 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 29 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 31 ธันวาคม 2568",
+        "quantity": 38000,
+        "unitPrice": 0.17,
+        "amount": 6460.000000000001
+      }
+    ]
+  },
+  {
+    "source": "ค่าเที่ยวดาวไพศาล.xlsx",
+    "sheet": "สรุป 69",
+    "invoiceNo": "DAOPAISAAN-2569-01",
+    "tenantCode": "DAOPAISAAN",
+    "tenantName": "ดาวไพศาล",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2026-02-01",
+    "dueDate": "2026-02-08",
+    "periodStart": "2026-01-01",
+    "periodEnd": "2026-01-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่ง 01/2569 จำนวน 21 เที่ยว",
+        "quantity": 760000,
+        "unitPrice": 0.17,
+        "amount": 129200.00000000001
+      }
+    ]
+  },
+  {
+    "source": "ค่าเที่ยวดาวไพศาล.xlsx",
+    "sheet": "สรุป 69",
+    "invoiceNo": "DAOPAISAAN-2569-02",
+    "tenantCode": "DAOPAISAAN",
+    "tenantName": "ดาวไพศาล",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2026-03-01",
+    "dueDate": "2026-03-08",
+    "periodStart": "2026-02-01",
+    "periodEnd": "2026-02-28",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่ง 02/2569 จำนวน 17 เที่ยว",
+        "quantity": 646000,
+        "unitPrice": 0.17,
+        "amount": 109820.00000000001
+      }
+    ]
+  },
+  {
+    "source": "ค่าเที่ยวดาวไพศาล.xlsx",
+    "sheet": "สรุป 69",
+    "invoiceNo": "DAOPAISAAN-2569-03",
+    "tenantCode": "DAOPAISAAN",
+    "tenantName": "ดาวไพศาล",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2026-04-01",
+    "dueDate": "2026-04-08",
+    "periodStart": "2026-03-01",
+    "periodEnd": "2026-03-31",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่ง 03/2569 จำนวน 26 เที่ยว",
+        "quantity": 988000,
+        "unitPrice": 0.17,
+        "amount": 167960.0
+      }
+    ]
+  },
+  {
+    "source": "ค่าเที่ยวดาวไพศาล.xlsx",
+    "sheet": "สรุป 69",
+    "invoiceNo": "DAOPAISAAN-2569-04",
+    "tenantCode": "DAOPAISAAN",
+    "tenantName": "ดาวไพศาล",
+    "tenantTaxId": "",
+    "tenantAddress": "",
+    "type": "fuel_transport",
+    "issueDate": "2026-05-01",
+    "dueDate": "2026-05-08",
+    "periodStart": "2026-04-01",
+    "periodEnd": "2026-04-30",
+    "vatEnabled": false,
+    "discount": 0,
+    "items": [
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 1 เมษายน 2569",
+        "quantity": 38000,
+        "unitPrice": 0.21,
+        "amount": 7980.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 2 เมษายน 2569",
+        "quantity": 38000,
+        "unitPrice": 0.21,
+        "amount": 7980.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 3 เมษายน 2569",
+        "quantity": 76000,
+        "unitPrice": 0.21,
+        "amount": 15960.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 4 เมษายน 2569",
+        "quantity": 38000,
+        "unitPrice": 0.21,
+        "amount": 7980.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 6 เมษายน 2569",
+        "quantity": 38000,
+        "unitPrice": 0.21,
+        "amount": 7980.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 9 เมษายน 2569",
+        "quantity": 76000,
+        "unitPrice": 0.21,
+        "amount": 15960.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 11 เมษายน 2569",
+        "quantity": 38000,
+        "unitPrice": 0.21,
+        "amount": 7980.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 12 เมษายน 2569",
+        "quantity": 38000,
+        "unitPrice": 0.21,
+        "amount": 7980.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 14 เมษายน 2569",
+        "quantity": 38000,
+        "unitPrice": 0.21,
+        "amount": 7980.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 17 เมษายน 2569",
+        "quantity": 38000,
+        "unitPrice": 0.21,
+        "amount": 7980.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 19 เมษายน 2569",
+        "quantity": 38000,
+        "unitPrice": 0.21,
+        "amount": 7980.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 20 เมษายน 2569",
+        "quantity": 38000,
+        "unitPrice": 0.21,
+        "amount": 7980.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 21 เมษายน 2569",
+        "quantity": 38000,
+        "unitPrice": 0.21,
+        "amount": 7980.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 24 เมษายน 2569",
+        "quantity": 76000,
+        "unitPrice": 0.21,
+        "amount": 15960.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 26 เมษายน 2569",
+        "quantity": 38000,
+        "unitPrice": 0.21,
+        "amount": 7980.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 27 เมษายน 2569",
+        "quantity": 38000,
+        "unitPrice": 0.21,
+        "amount": 7980.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 29 เมษายน 2569",
+        "quantity": 38000,
+        "unitPrice": 0.21,
+        "amount": 7980.0
+      },
+      {
+        "type": "fuel_transport",
+        "description": "ค่าเที่ยวขนส่งวันที่ 30 เมษายน 2569",
+        "quantity": 38000,
+        "unitPrice": 0.21,
+        "amount": 7980.0
+      }
+    ]
+  },
+  {
+    "source": "ใบแจ้งหนี้ flash 12 68.pdf",
+    "sheet": "page 1",
+    "invoiceNo": "20251203",
+    "tenantCode": "FLASH",
+    "tenantName": "บริษัท แฟลช เอ็กซ์เพรส จำกัด สำนักงานใหญ่",
+    "tenantTaxId": "0105560159254",
+    "tenantAddress": "เลขที่ 161 อาคารยูนิลีเวอร์ เฮ้าส์ ชั้นที่ 7 และ 8 ถนนพระรามเก้า\nแขวงห้วยขวาง เขตห้วยขวาง กรุงเทพมหานคร 10310",
+    "type": "rent",
+    "issueDate": "2025-12-01",
+    "dueDate": "2025-12-31",
+    "periodStart": "2025-12-01",
+    "periodEnd": "2025-12-31",
+    "vatEnabled": false,
+    "discount": 1552.63,
+    "items": [
+      {
+        "type": "rent",
+        "description": "ค่าเช่า (เริ่ม 01/12/2568-31/12/2568)",
+        "quantity": 1,
+        "unitPrice": 31052.63,
+        "amount": 31052.63
+      }
+    ]
+  }
+]
