@@ -188,17 +188,17 @@ export function InvoiceDocument({
   ].filter(Boolean);
 
   return (
-    <article className="mx-auto w-full max-w-[210mm] bg-white p-3 text-[12px] leading-snug text-foreground print:max-w-none print:p-0 print:text-[10px] print:leading-snug print:text-black">
+    <article className="mx-auto w-full max-w-[210mm] bg-white p-3 text-[12px] leading-snug text-foreground print:max-w-none print:p-0 print:text-[11.5px] print:leading-snug print:text-black">
       <section className="mx-auto flex min-h-[297mm] w-[198mm] max-w-full flex-col bg-white px-6 py-6 print:min-h-[285mm] print:w-full print:px-0 print:py-0">
         <header className="grid gap-4 border-b-2 border-foreground pb-4 print:border-black print:pb-3 sm:grid-cols-[minmax(0,1fr)_62mm]">
           <div className="min-w-0">
             <p className="text-[11px] font-semibold text-primary print:text-black">
               เอกสารเรียกเก็บเงิน
             </p>
-            <h1 className="mt-1 text-[28px] font-semibold text-foreground print:text-[24px] print:text-black">
+            <h1 className="mt-1 text-[28px] font-semibold text-foreground print:text-[26px] print:text-black">
               {documentTitle(invoice)}
             </h1>
-            <p className="mt-1 text-[12px] text-muted-foreground print:text-[10px] print:text-black">
+            <p className="mt-1 text-[12px] text-muted-foreground print:text-[11px] print:text-black">
               {formatInvoiceType(invoice.type)}
               {cycle?.label ? ` · ${cycle.label}` : ""}
             </p>
@@ -237,7 +237,7 @@ export function InvoiceDocument({
           />
         </section>
 
-        <table className="mt-4 w-full table-fixed border-collapse text-[11px] print:mt-3 print:text-[9.5px]">
+        <table className="mt-4 w-full table-fixed border-collapse text-[11px] print:mt-3 print:text-[10.5px]">
           <colgroup>
             <col className="w-[8%]" />
             <col className="w-[52%]" />
@@ -261,7 +261,7 @@ export function InvoiceDocument({
                 <TableCell>
                   <p className="font-medium">{row.description}</p>
                   {row.evidence ? (
-                    <p className="mt-1 text-[10px] text-muted-foreground print:text-[8.5px] print:text-black">
+                    <p className="mt-1 text-[10px] text-muted-foreground print:text-[9.5px] print:text-black">
                       หน่วยเริ่มต้น{" "}
                       {formatMeterDate(
                         row.evidence.previousCapturedAt ??
@@ -296,16 +296,16 @@ export function InvoiceDocument({
         <section className="mt-4 grid gap-4 print:mt-3 sm:grid-cols-[minmax(0,1fr)_72mm]">
           <div className="grid content-start gap-3">
             <div className="rounded-sm border border-border bg-secondary/40 p-3 print:border-black print:bg-white print:p-2">
-              <p className="text-[11px] text-muted-foreground print:text-[9px] print:text-black">
+              <p className="text-[11px] text-muted-foreground print:text-[10.5px] print:text-black">
                 จำนวนเงินทั้งสิ้น
               </p>
-              <p className="mt-1 text-base font-semibold print:text-[12px]">
+              <p className="mt-1 text-base font-semibold print:text-[14px]">
                 {thaiBahtText(invoice.total)}
               </p>
             </div>
             <div className="rounded-sm border border-border p-3 print:border-black print:p-2">
               <p className="font-semibold">ชำระเงิน</p>
-              <div className="mt-2 grid gap-1 text-[11px] text-muted-foreground print:text-[9px] print:text-black">
+              <div className="mt-2 grid gap-1 text-[11px] text-muted-foreground print:text-[10.5px] print:text-black">
                 <p>อ้างอิงเลขที่เอกสาร {invoice.invoiceNo}</p>
                 {paymentLines.length ? (
                   paymentLines.map((line) => <p key={line}>{line}</p>)
@@ -337,7 +337,7 @@ export function InvoiceDocument({
         </section>
 
         {invoice.notes ? (
-          <section className="mt-4 rounded-sm border border-border p-3 text-[11px] print:mt-3 print:border-black print:p-2 print:text-[9px]">
+          <section className="mt-4 rounded-sm border border-border p-3 text-[11px] print:mt-3 print:border-black print:p-2 print:text-[10px]">
             <p className="font-semibold">หมายเหตุ</p>
             <p className="mt-1 text-muted-foreground print:text-black">
               {invoice.notes}
@@ -348,10 +348,10 @@ export function InvoiceDocument({
         {meterEvidence.length ? (
           <section className="mt-5 grid gap-3 print:mt-3 print:gap-2">
             <div className="flex items-center justify-between gap-3 border-b border-border pb-2 print:border-black print:pb-1">
-              <h2 className="text-sm font-semibold print:text-[11px]">
+              <h2 className="text-sm font-semibold print:text-[12.5px]">
                 หลักฐานรูปมิเตอร์
               </h2>
-              <p className="text-[11px] text-muted-foreground print:text-[9px] print:text-black">
+              <p className="text-[11px] text-muted-foreground print:text-[10.5px] print:text-black">
                 รูปเดือนก่อนและเดือนปัจจุบัน
               </p>
             </div>
@@ -361,7 +361,7 @@ export function InvoiceDocument({
           </section>
         ) : null}
 
-        <section className="mt-auto grid grid-cols-2 gap-10 pt-12 text-center font-semibold print:pt-8 print:text-[10px]">
+        <section className="mt-auto grid grid-cols-2 gap-10 pt-12 text-center font-semibold print:pt-8 print:text-[11.5px]">
           <SignatureBlock label="ผู้รับใบแจ้งหนี้" />
           <SignatureBlock label="ผู้วางบิลเก็บเงิน" />
         </section>
@@ -381,13 +381,13 @@ function PartyBlock({
 }) {
   return (
     <div className="min-w-0 rounded-sm border border-border p-3 print:border-black print:p-2">
-      <p className="text-[11px] font-semibold text-muted-foreground print:text-[9px] print:text-black">
+      <p className="text-[11px] font-semibold text-muted-foreground print:text-[10.5px] print:text-black">
         {title}
       </p>
-      <h2 className="mt-1 text-[15px] font-semibold print:text-[11px]">
+      <h2 className="mt-1 text-[15px] font-semibold print:text-[13px]">
         {name || "-"}
       </h2>
-      <div className="mt-2 space-y-1 text-[11px] text-muted-foreground print:text-[9px] print:text-black">
+      <div className="mt-2 space-y-1 text-[11px] text-muted-foreground print:text-[10.5px] print:text-black">
         {lines.filter(Boolean).map((line, index) => (
           <p key={`${line}-${index}`}>{line}</p>
         ))}
@@ -467,7 +467,7 @@ function SignatureBlock({ label }: { label: string }) {
     <div>
       <div className="mx-auto mb-2 h-10 w-44 border-b border-foreground print:h-8 print:w-36 print:border-black" />
       <p>{label}</p>
-      <p className="mt-1 text-[10px] font-normal text-muted-foreground print:text-[8.5px] print:text-black">
+      <p className="mt-1 text-[10px] font-normal text-muted-foreground print:text-[9.5px] print:text-black">
         วันที่ ................................
       </p>
     </div>
@@ -477,10 +477,10 @@ function SignatureBlock({ label }: { label: string }) {
 function DocMeta({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-3 border-b border-border pb-1 last:border-0 last:pb-0 print:gap-2 print:border-black">
-      <dt className="text-[10px] font-medium text-muted-foreground print:text-[8.5px] print:text-black">
+      <dt className="text-[10px] font-medium text-muted-foreground print:text-[9.5px] print:text-black">
         {label}
       </dt>
-      <dd className="text-right text-[11px] font-semibold print:text-[9px]">
+      <dd className="text-right text-[11px] font-semibold print:text-[10.5px]">
         {value}
       </dd>
     </div>
@@ -507,7 +507,7 @@ function MeterEvidenceBlock({ evidence }: { evidence: InvoiceMeterEvidence }) {
         reading={evidence.currentReading}
         imageUrl={evidence.imageUrl}
       />
-      <div className="grid content-start gap-2 rounded-sm bg-secondary/60 p-3 text-[11px] print:gap-1.5 print:border print:border-black print:bg-white print:p-2 print:text-[10px]">
+      <div className="grid content-start gap-2 rounded-sm bg-secondary/60 p-3 text-[11px] print:gap-1.5 print:border print:border-black print:bg-white print:p-2 print:text-[11px]">
         <p className="font-semibold">{evidence.unitCode || evidence.unitName}</p>
         {evidence.meterSerial ? (
           <p className="text-muted-foreground print:text-black">
@@ -543,7 +543,7 @@ function EvidenceImageBox({
 }) {
   return (
     <div className="min-w-0">
-      <div className="flex items-center justify-between gap-3 text-[11px] print:text-[10px]">
+      <div className="flex items-center justify-between gap-3 text-[11px] print:text-[11px]">
         <p className="font-semibold">{title}</p>
         <p className="text-muted-foreground print:text-black">{date}</p>
       </div>
@@ -555,12 +555,12 @@ function EvidenceImageBox({
             className="h-full w-full object-cover"
           />
         ) : (
-          <p className="px-3 text-center text-[11px] text-muted-foreground print:text-[9px] print:text-black">
+          <p className="px-3 text-center text-[11px] text-muted-foreground print:text-[10.5px] print:text-black">
             เว้นไว้สำหรับรูปมิเตอร์จริง
           </p>
         )}
       </div>
-      <div className="mt-2 flex items-center justify-between gap-3 text-[11px] print:mt-1 print:text-[10px]">
+      <div className="mt-2 flex items-center justify-between gap-3 text-[11px] print:mt-1 print:text-[11px]">
         <span className="text-muted-foreground print:text-black">เลขมิเตอร์</span>
         <span className="font-semibold">{formatNumber(reading)}</span>
       </div>
