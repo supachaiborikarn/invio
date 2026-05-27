@@ -18,6 +18,7 @@ import {
   Layers,
   Link2,
   Mail,
+  Pencil,
   Plus,
   Printer,
   ReceiptText,
@@ -50,6 +51,7 @@ import {
   revokeTenantPortalLinkAction,
   sendInvoiceEmailAction,
   sendReceiptEmailAction,
+  updateInvoiceAction,
   updateOrganizationAction,
   updateTenantAction,
   updateUnitAction,
@@ -198,11 +200,14 @@ function tabHref(tab: WorkspaceTab) {
   return tab === "overview" ? "/" : `/?tab=${tab}`;
 }
 
-function field(form: HTMLFormElement, name: string) {
-  return String(new FormData(form).get(name) ?? "").trim();
+type FormSource = HTMLFormElement | FormData;
+
+function field(form: FormSource, name: string) {
+  const formData = form instanceof FormData ? form : new FormData(form);
+  return String(formData.get(name) ?? "").trim();
 }
 
-function amountField(form: HTMLFormElement, name: string) {
+function amountField(form: FormSource, name: string) {
   return Number(field(form, name).replace(/,/g, "")) || 0;
 }
 
@@ -220,6 +225,31 @@ type FuelTripPayloadItem = {
   quantity: number;
   unitPrice: number;
 };
+
+type InvoiceEditFormRow = {
+  id: string;
+  itemId?: string;
+  type: InvoiceType;
+  description: string;
+  quantity: string;
+  unitPrice: string;
+  meterReadingId?: string;
+};
+
+type InvoiceEditPayloadItem = {
+  type: InvoiceType;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  meterReadingId?: string;
+};
+
+const editableInvoiceTypes: InvoiceType[] = [
+  "rent",
+  "electricity",
+  "fuel_transport",
+  "other",
+];
 
 const sampleTenantsForDemo: Tenant[] = [
   {
@@ -311,6 +341,72 @@ function normalizeFuelTripRows(rows: FuelTripFormRow[]): FuelTripPayloadItem[] {
   });
 }
 
+function createInvoiceEditRow(item?: InvoiceItem): InvoiceEditFormRow {
+  return {
+    id: createId("invoice-edit-row"),
+    itemId: item?.id,
+    type:
+      item?.type && editableInvoiceTypes.includes(item.type)
+        ? item.type
+        : "other",
+    description: item?.description ?? "",
+    quantity: String(item?.quantity ?? 1),
+    unitPrice: String(item?.unitPrice ?? 0),
+    meterReadingId: item?.meterReadingId,
+  };
+}
+
+function normalizeInvoiceEditRows(
+  rows: InvoiceEditFormRow[],
+): InvoiceEditPayloadItem[] {
+  return rows.map((row) => ({
+    type: row.type,
+    description: row.description.trim(),
+    quantity: Math.max(Math.round(Number(row.quantity) || 1), 1),
+    unitPrice: Number(String(row.unitPrice).replace(/,/g, "")) || 0,
+    meterReadingId: row.meterReadingId,
+  }));
+}
+
+function invoiceEditItemsFromJson(value: string): InvoiceItem[] {
+  if (!value) return [];
+
+  try {
+    const rows = JSON.parse(value) as InvoiceEditPayloadItem[];
+
+    if (!Array.isArray(rows)) return [];
+
+    return rows
+      .map((row): InvoiceItem | null => {
+        const description = row.description?.trim();
+        const quantity = Math.max(Math.round(Number(row.quantity) || 1), 1);
+        const unitPrice = Number(row.unitPrice) || 0;
+        const type = editableInvoiceTypes.includes(row.type) ? row.type : "other";
+
+        if (!description || unitPrice <= 0) return null;
+
+        return {
+          id: createId("item"),
+          type,
+          description,
+          quantity,
+          unitPrice,
+          amount: quantity * unitPrice,
+          meterReadingId: row.meterReadingId,
+        };
+      })
+      .filter((item): item is InvoiceItem => Boolean(item));
+  } catch {
+    return [];
+  }
+}
+
+function inferInvoiceType(items: InvoiceItem[], fallback: InvoiceType): InvoiceType {
+  const uniqueTypes = new Set(items.map((item) => item.type));
+  if (uniqueTypes.size === 1) return items[0]?.type ?? fallback;
+  return "mixed";
+}
+
 function fuelTripItemsFromJson(value: string): InvoiceItem[] {
   if (!value) return [];
 
@@ -347,10 +443,14 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function dateInputValue(value: Date) {
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
+function dateInputValue(value: Date | string) {
+  const date = typeof value === "string" ? new Date(value) : value;
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }
@@ -793,6 +893,63 @@ export function BillingWorkspace({
     form.reset();
     setRentOpen(false);
     setFuelTransportOpen(false);
+  }
+
+  async function handleInvoiceUpdate(formData: FormData) {
+    const invoiceId = field(formData, "invoiceId");
+    const items = invoiceEditItemsFromJson(field(formData, "itemsJson"));
+
+    if (!invoiceId || !items.length) {
+      setActionMessage("ต้องมีรายการในใบแจ้งหนี้อย่างน้อย 1 รายการ");
+      return false;
+    }
+
+    if (!data.databaseConfigured) {
+      setData((current) => ({
+        ...current,
+        invoices: current.invoices.map((invoice) => {
+          if (invoice.id !== invoiceId) return invoice;
+
+          const totalsForInvoice = calculateInvoiceTotals({
+            items,
+            discount: amountField(formData, "discount"),
+            vatEnabled: field(formData, "vatEnabled") === "yes",
+            vatRate: data.organization.vatRate,
+          });
+          const dueDate = field(formData, "dueDate") || invoice.dueDate;
+          const status = deriveInvoiceStatus({
+            total: totalsForInvoice.total,
+            paid: invoice.paid,
+            dueDate,
+            issued: true,
+          });
+
+          return {
+            ...invoice,
+            tenantId: field(formData, "tenantId") || invoice.tenantId,
+            dueDate,
+            items,
+            type: inferInvoiceType(items, invoice.type),
+            notes: field(formData, "notes"),
+            vatEnabled: field(formData, "vatEnabled") === "yes",
+            status,
+            ...totalsForInvoice,
+            paid: invoice.paid,
+            balance: Math.max(totalsForInvoice.total - invoice.paid, 0),
+          };
+        }),
+      }));
+      setActionMessage("แก้ไขใบแจ้งหนี้แล้ว");
+      return true;
+    }
+
+    const result = await updateInvoiceAction(
+      { ok: false, message: "" },
+      formData,
+    );
+    setActionMessage(result.message);
+    if (result.ok) router.refresh();
+    return result.ok;
   }
 
   async function handleMeterSubmit(event: FormEvent<HTMLFormElement>) {
@@ -1437,12 +1594,14 @@ export function BillingWorkspace({
             </div>
             <div className="flex flex-wrap gap-2">
               <Dialog open={cycleOpen} onOpenChange={setCycleOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline">
-                    <CalendarPlus className="size-4" />
-                    รอบบิลใหม่
-                  </Button>
-                </DialogTrigger>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCycleOpen(true)}
+                >
+                  <CalendarPlus className="size-4" />
+                  รอบบิลใหม่
+                </Button>
                 <CycleDialog
                   data={data}
                   activeCycle={activeCycle}
@@ -1458,12 +1617,14 @@ export function BillingWorkspace({
                 สร้างบิลยกชุด
               </Button>
               <Dialog open={meterOpen} onOpenChange={setMeterOpen}>
-                <DialogTrigger asChild>
-                  <Button disabled={!activeCycle}>
-                    <ImageUp className="size-4" />
-                    บันทึกมิเตอร์
-                  </Button>
-                </DialogTrigger>
+                <Button
+                  type="button"
+                  disabled={!activeCycle}
+                  onClick={() => setMeterOpen(true)}
+                >
+                  <ImageUp className="size-4" />
+                  บันทึกมิเตอร์
+                </Button>
                 {activeCycle ? (
                   <MeterDialog
                     data={data}
@@ -1477,12 +1638,15 @@ export function BillingWorkspace({
                 ) : null}
               </Dialog>
               <Dialog open={rentOpen} onOpenChange={setRentOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" disabled={!activeCycle}>
-                    <Plus className="size-4" />
-                    ใบค่าเช่า
-                  </Button>
-                </DialogTrigger>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!activeCycle}
+                  onClick={() => setRentOpen(true)}
+                >
+                  <Plus className="size-4" />
+                  ใบค่าเช่า
+                </Button>
                 {activeCycle ? (
                   <RentInvoiceDialog
                     data={data}
@@ -1495,12 +1659,15 @@ export function BillingWorkspace({
                 open={fuelTransportOpen}
                 onOpenChange={setFuelTransportOpen}
               >
-                <DialogTrigger asChild>
-                  <Button variant="outline" disabled={!activeCycle}>
-                    <Truck className="size-4" />
-                    ใบขนส่งน้ำมัน
-                  </Button>
-                </DialogTrigger>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!activeCycle}
+                  onClick={() => setFuelTransportOpen(true)}
+                >
+                  <Truck className="size-4" />
+                  ใบขนส่งน้ำมัน
+                </Button>
                 {activeCycle ? (
                   <FuelTransportInvoiceDialog
                     data={data}
@@ -1510,12 +1677,14 @@ export function BillingWorkspace({
                 ) : null}
               </Dialog>
               <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline">
-                    <CircleDollarSign className="size-4" />
-                    รับชำระ
-                  </Button>
-                </DialogTrigger>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPaymentOpen(true)}
+                >
+                  <CircleDollarSign className="size-4" />
+                  รับชำระ
+                </Button>
                 <PaymentDialog data={data} onSubmit={handlePaymentSubmit} />
               </Dialog>
             </div>
@@ -1722,6 +1891,7 @@ export function BillingWorkspace({
               <InvoiceList
                 data={data}
                 cycleId={activeCycle?.id ?? ""}
+                onUpdateInvoice={handleInvoiceUpdate}
                 onSendInvoice={handleSendInvoice}
                 onSendReminder={handleSendReminder}
                 onVoidInvoice={handleVoidInvoice}
@@ -2326,6 +2496,7 @@ function InvoiceList({
   data,
   cycleId,
   compact,
+  onUpdateInvoice,
   onSendInvoice,
   onSendReminder,
   onVoidInvoice,
@@ -2333,6 +2504,7 @@ function InvoiceList({
   data: DashboardData;
   cycleId?: string;
   compact?: boolean;
+  onUpdateInvoice?: (formData: FormData) => Promise<boolean>;
   onSendInvoice?: (invoiceId: string) => void;
   onSendReminder?: (invoiceId: string) => void;
   onVoidInvoice?: (invoiceId: string) => void;
@@ -2421,6 +2593,13 @@ function InvoiceList({
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">
+                      {onUpdateInvoice && invoice.status !== "void" ? (
+                        <InvoiceEditButton
+                          data={data}
+                          invoice={invoice}
+                          onUpdateInvoice={onUpdateInvoice}
+                        />
+                      ) : null}
                       <PrintButton href={`/print/invoice/${invoice.id}`} />
                       {onSendInvoice ? (
                         <Button
@@ -2495,6 +2674,14 @@ function InvoiceList({
                       พิมพ์
                     </a>
                   </Button>
+                  {onUpdateInvoice && invoice.status !== "void" ? (
+                    <InvoiceEditButton
+                      data={data}
+                      invoice={invoice}
+                      onUpdateInvoice={onUpdateInvoice}
+                      buttonVariant="outline"
+                    />
+                  ) : null}
                   {onSendInvoice ? (
                     <Button
                       variant="outline"
@@ -2532,6 +2719,263 @@ function InvoiceList({
         })}
       </div>
     </section>
+  );
+}
+
+function InvoiceEditButton({
+  data,
+  invoice,
+  onUpdateInvoice,
+  buttonVariant = "ghost",
+}: {
+  data: DashboardData;
+  invoice: Invoice;
+  onUpdateInvoice: (formData: FormData) => Promise<boolean>;
+  buttonVariant?: "ghost" | "outline";
+}) {
+  const [open, setOpen] = useState(false);
+  const isOutline = buttonVariant === "outline";
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button
+        type="button"
+        size={isOutline ? "sm" : "icon"}
+        variant={buttonVariant}
+        title="แก้ไขใบแจ้งหนี้"
+        onClick={() => setOpen(true)}
+      >
+        <Pencil className="size-4" />
+        {isOutline ? "แก้ไข" : <span className="sr-only">แก้ไข</span>}
+      </Button>
+      <InvoiceEditDialog
+        data={data}
+        invoice={invoice}
+        onSaved={() => setOpen(false)}
+        onUpdateInvoice={onUpdateInvoice}
+      />
+    </Dialog>
+  );
+}
+
+function InvoiceEditDialog({
+  data,
+  invoice,
+  onSaved,
+  onUpdateInvoice,
+}: {
+  data: DashboardData;
+  invoice: Invoice;
+  onSaved: () => void;
+  onUpdateInvoice: (formData: FormData) => Promise<boolean>;
+}) {
+  const [tenantId, setTenantId] = useState(invoice.tenantId);
+  const [vatEnabled, setVatEnabled] = useState(invoice.vatEnabled ? "yes" : "no");
+  const [rows, setRows] = useState<InvoiceEditFormRow[]>(() =>
+    invoice.items.length
+      ? invoice.items.map((item) => createInvoiceEditRow(item))
+      : [createInvoiceEditRow()],
+  );
+  const normalizedRows = useMemo(() => normalizeInvoiceEditRows(rows), [rows]);
+  const itemsJson = JSON.stringify(normalizedRows);
+  const subtotal = normalizedRows.reduce(
+    (sum, row) => sum + row.quantity * row.unitPrice,
+    0,
+  );
+
+  function updateRow(
+    rowId: string,
+    key: keyof Omit<InvoiceEditFormRow, "id" | "itemId" | "meterReadingId">,
+    value: string,
+  ) {
+    setRows((current) =>
+      current.map((row) =>
+        row.id === rowId ? { ...row, [key]: value } : row,
+      ),
+    );
+  }
+
+  function addRow() {
+    setRows((current) => [...current, createInvoiceEditRow()]);
+  }
+
+  function removeRow(rowId: string) {
+    setRows((current) =>
+      current.length > 1 ? current.filter((row) => row.id !== rowId) : current,
+    );
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const ok = await onUpdateInvoice(new FormData(event.currentTarget));
+    if (ok) onSaved();
+  }
+
+  return (
+    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+      <DialogHeader>
+        <DialogTitle>แก้ไขใบแจ้งหนี้ {invoice.invoiceNo}</DialogTitle>
+        <DialogDescription>แก้ผู้ถูกเรียกเก็บ รายการ ยอด และวันครบกำหนด</DialogDescription>
+      </DialogHeader>
+      <form onSubmit={handleSubmit} className="grid gap-4">
+        <input type="hidden" name="invoiceId" value={invoice.id} />
+        <input type="hidden" name="itemsJson" value={itemsJson} />
+        <div className="grid gap-3">
+          <div className="grid min-w-0 gap-2">
+            <Label>ผู้ถูกเรียกเก็บ</Label>
+            <Select name="tenantId" value={tenantId} onValueChange={setTenantId}>
+              <SelectTrigger className="w-full min-w-0 [&_[data-slot=select-value]]:block [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:truncate">
+                <SelectValue placeholder="เลือกผู้ถูกเรียกเก็บ" />
+              </SelectTrigger>
+              <SelectContent className="max-w-[calc(100vw-3rem)]">
+                {data.tenants.map((tenant) => (
+                  <SelectItem key={tenant.id} value={tenant.id}>
+                    <span className="block max-w-[32rem] truncate">
+                      {tenant.code} · {tenant.name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field
+              label="กำหนดชำระ"
+              name="dueDate"
+              type="date"
+              defaultValue={dateInputValue(invoice.dueDate)}
+            />
+            <Field
+              label="ส่วนลด"
+              name="discount"
+              type="number"
+              step="0.01"
+              defaultValue={String(invoice.discount)}
+            />
+            <div className="grid gap-2">
+              <Label>VAT</Label>
+              <Select
+                name="vatEnabled"
+                value={vatEnabled}
+                onValueChange={setVatEnabled}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="yes">คิด VAT</SelectItem>
+                  <SelectItem value="no">ไม่คิด VAT</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <Label>รายการในใบแจ้งหนี้</Label>
+            <Button type="button" variant="outline" size="sm" onClick={addRow}>
+              <Plus className="size-4" />
+              เพิ่มรายการ
+            </Button>
+          </div>
+          <div className="grid gap-3">
+            {rows.map((row, index) => (
+              <div
+                key={row.id}
+                className="grid gap-3 rounded-lg border p-3 lg:grid-cols-[9rem_minmax(0,1fr)_6rem_9rem_2.5rem]"
+              >
+                <div className="grid gap-2">
+                  <Label>ประเภท</Label>
+                  <Select
+                    value={row.type}
+                    onValueChange={(value) =>
+                      updateRow(row.id, "type", value as InvoiceType)
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {editableInvoiceTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {formatInvoiceType(type)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid min-w-0 gap-2">
+                  <Label htmlFor={`editInvoiceDescription-${row.id}`}>
+                    รายละเอียด
+                  </Label>
+                  <Input
+                    id={`editInvoiceDescription-${row.id}`}
+                    value={row.description}
+                    placeholder={`รายการ ${index + 1}`}
+                    onChange={(event) =>
+                      updateRow(row.id, "description", event.target.value)
+                    }
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor={`editInvoiceQuantity-${row.id}`}>จำนวน</Label>
+                  <Input
+                    id={`editInvoiceQuantity-${row.id}`}
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={row.quantity}
+                    onChange={(event) =>
+                      updateRow(row.id, "quantity", event.target.value)
+                    }
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor={`editInvoicePrice-${row.id}`}>ราคา/หน่วย</Label>
+                  <Input
+                    id={`editInvoicePrice-${row.id}`}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={row.unitPrice}
+                    onChange={(event) =>
+                      updateRow(row.id, "unitPrice", event.target.value)
+                    }
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="mt-6 size-9"
+                  disabled={rows.length === 1}
+                  onClick={() => removeRow(row.id)}
+                >
+                  <Trash2 className="size-4" />
+                  <span className="sr-only">ลบรายการ</span>
+                </Button>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm">
+            <span className="text-muted-foreground">รวมก่อน VAT</span>
+            <span className="font-semibold">{formatCurrency(subtotal)}</span>
+          </div>
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor={`editInvoiceNotes-${invoice.id}`}>หมายเหตุ</Label>
+          <Textarea
+            id={`editInvoiceNotes-${invoice.id}`}
+            name="notes"
+            defaultValue={invoice.notes ?? ""}
+            rows={3}
+          />
+        </div>
+        <Button type="submit">บันทึกการแก้ไข</Button>
+      </form>
+    </DialogContent>
   );
 }
 
@@ -3486,28 +3930,32 @@ function FuelTransportInvoiceDialog({
         <input type="hidden" name="billingCycleId" value={activeCycle.id} />
         <input type="hidden" name="type" value="fuel_transport" />
         <input type="hidden" name="itemsJson" value={itemsJson} />
-        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_12rem]">
+        <div className="grid gap-3">
           <div className="grid min-w-0 gap-2">
             <Label>ผู้ถูกเรียกเก็บ</Label>
             <Select name="tenantId" value={tenantId} onValueChange={setTenantId}>
-              <SelectTrigger className="w-full min-w-0">
+              <SelectTrigger className="w-full min-w-0 [&_[data-slot=select-value]]:block [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:truncate">
                 <SelectValue placeholder="เลือกผู้ถูกเรียกเก็บ" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-w-[calc(100vw-3rem)]">
                 {data.tenants.map((item) => (
                   <SelectItem key={item.id} value={item.id}>
-                    {item.code} · {item.name}
+                    <span className="block max-w-[32rem] truncate">
+                      {item.code} · {item.name}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <Field
-            label="กำหนดชำระ"
-            name="dueDate"
-            type="date"
-            defaultValue={activeCycle.dueDate.slice(0, 10)}
-          />
+          <div className="max-w-xs">
+            <Field
+              label="กำหนดชำระ"
+              name="dueDate"
+              type="date"
+              defaultValue={activeCycle.dueDate.slice(0, 10)}
+            />
+          </div>
         </div>
         <div className="grid gap-3">
           <div className="flex items-center justify-between gap-3">

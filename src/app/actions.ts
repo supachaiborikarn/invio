@@ -112,9 +112,22 @@ function toDateValue(value: string) {
 }
 
 const manualInvoiceTypes = ["rent", "fuel_transport", "other"] as const;
+const editableInvoiceTypes = [
+  "rent",
+  "electricity",
+  "fuel_transport",
+  "mixed",
+  "other",
+] as const;
 
 function isManualInvoiceType(value: string): value is (typeof manualInvoiceTypes)[number] {
   return manualInvoiceTypes.includes(value as (typeof manualInvoiceTypes)[number]);
+}
+
+function isEditableInvoiceType(value: string): value is InvoiceType {
+  return editableInvoiceTypes.includes(
+    value as (typeof editableInvoiceTypes)[number],
+  );
 }
 
 const fuelTripItemsSchema = z.array(
@@ -123,6 +136,16 @@ const fuelTripItemsSchema = z.array(
     label: z.string().optional(),
     quantity: z.coerce.number(),
     unitPrice: z.coerce.number(),
+  }),
+);
+
+const editableInvoiceItemsSchema = z.array(
+  z.object({
+    type: z.string(),
+    description: z.string(),
+    quantity: z.coerce.number(),
+    unitPrice: z.coerce.number(),
+    meterReadingId: z.string().optional(),
   }),
 );
 
@@ -186,6 +209,61 @@ function parseFuelTripItems(value: string): ActionFailure | { ok: true; items: I
   }
 
   return { ok: true, items };
+}
+
+function parseEditableInvoiceItems(
+  value: string,
+): ActionFailure | { ok: true; items: InvoiceItem[] } {
+  if (!value) {
+    return { ok: false, message: "ต้องมีรายการในใบแจ้งหนี้อย่างน้อย 1 รายการ" };
+  }
+
+  let payload: unknown;
+
+  try {
+    payload = JSON.parse(value);
+  } catch {
+    return { ok: false, message: "รายการในใบแจ้งหนี้ไม่ถูกต้อง" };
+  }
+
+  const parsed = editableInvoiceItemsSchema.safeParse(payload);
+
+  if (!parsed.success) {
+    return { ok: false, message: "รายการในใบแจ้งหนี้ไม่ถูกต้อง" };
+  }
+
+  const items = parsed.data
+    .map((item, index): InvoiceItem | null => {
+      const type = isEditableInvoiceType(item.type) ? item.type : "other";
+      const description = item.description.trim();
+      const quantity = Math.max(Math.round(item.quantity), 1);
+      const unitPrice = Number.isFinite(item.unitPrice) ? item.unitPrice : 0;
+
+      if (!description || unitPrice <= 0) return null;
+
+      return {
+        id: `edited-item-${index + 1}`,
+        type,
+        description,
+        quantity,
+        unitPrice,
+        amount: quantity * unitPrice,
+        meterReadingId: item.meterReadingId || undefined,
+      };
+    })
+    .filter((item): item is InvoiceItem => Boolean(item));
+
+  if (!items.length) {
+    return { ok: false, message: "ต้องกรอกรายการและยอดเงินอย่างน้อย 1 รายการ" };
+  }
+
+  return { ok: true, items };
+}
+
+function inferInvoiceTypeFromItems(items: InvoiceItem[], fallback: InvoiceType): InvoiceType {
+  const uniqueTypes = new Set(items.map((item) => item.type));
+  if (uniqueTypes.size === 1) return items[0]?.type ?? fallback;
+  return "mixed";
 }
 
 const tenantSchema = z.object({
@@ -915,6 +993,122 @@ export async function createInvoiceForUnitAction(
 
   revalidatePath("/");
   return { ok: true, message: "ออกใบแจ้งหนี้แล้ว" };
+}
+
+export async function updateInvoiceAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireStaffAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const invoiceId = textValue(formData, "invoiceId");
+  const tenantId = textValue(formData, "tenantId");
+  const dueDate = textValue(formData, "dueDate");
+  const discount = numberValue(formData, "discount");
+  const vatEnabled = booleanValue(formData, "vatEnabled");
+  const notes = textValue(formData, "notes");
+  const parsedItems = parseEditableInvoiceItems(textValue(formData, "itemsJson"));
+
+  if (!invoiceId || !tenantId || !dueDate) {
+    return { ok: false, message: "ข้อมูลใบแจ้งหนี้ไม่ครบ" };
+  }
+
+  if (!parsedItems.ok) return parsedItems;
+
+  const db = getDb();
+  const organizationId = await getDefaultOrganizationId();
+  const [[invoice], [tenant]] = await Promise.all([
+    db
+      .select()
+      .from(invoices)
+      .where(
+        and(
+          eq(invoices.id, invoiceId),
+          eq(invoices.organizationId, organizationId),
+        ),
+      )
+      .limit(1),
+    db
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(and(eq(tenants.id, tenantId), eq(tenants.organizationId, organizationId)))
+      .limit(1),
+  ]);
+
+  if (!invoice) {
+    return { ok: false, message: "ไม่พบใบแจ้งหนี้" };
+  }
+
+  if (!tenant) {
+    return { ok: false, message: "ไม่พบผู้เช่า" };
+  }
+
+  if (invoice.status === "void") {
+    return { ok: false, message: "ใบแจ้งหนี้ที่ยกเลิกแล้วแก้ไขไม่ได้" };
+  }
+
+  const totals = calculateInvoiceTotals({
+    items: parsedItems.items,
+    discount,
+    vatEnabled,
+  });
+  const paid = invoice.paidSatang / 100;
+  const newDueDate = toDateValue(dueDate);
+  const status = deriveInvoiceStatus({
+    total: totals.total,
+    paid,
+    dueDate: newDueDate.toISOString(),
+    issued: true,
+  });
+  const nextType = inferInvoiceTypeFromItems(parsedItems.items, invoice.type);
+
+  await db
+    .update(invoices)
+    .set({
+      tenantId,
+      type: nextType,
+      dueDate: newDueDate,
+      subtotalSatang: toSatang(totals.subtotal),
+      discountSatang: toSatang(totals.discount),
+      vatRateBasisPoints: totals.vatRate * 100,
+      vatEnabled,
+      vatAmountSatang: toSatang(totals.vatAmount),
+      totalSatang: toSatang(totals.total),
+      balanceSatang: Math.max(toSatang(totals.total) - invoice.paidSatang, 0),
+      status,
+      notes,
+      updatedAt: new Date(),
+    })
+    .where(eq(invoices.id, invoiceId));
+
+  await db.delete(invoiceItems).where(eq(invoiceItems.invoiceId, invoiceId));
+  await db.insert(invoiceItems).values(
+    parsedItems.items.map((item) => ({
+      invoiceId,
+      meterReadingId: item.meterReadingId,
+      type: item.type,
+      description: item.description,
+      quantity: item.quantity,
+      unitPriceSatang: toSatang(item.unitPrice),
+      amountSatang: toSatang(item.amount),
+    })),
+  );
+
+  await db.insert(invoiceAuditLogs).values({
+    organizationId,
+    invoiceId,
+    actorUserId: user.appUserId,
+    action: "update_invoice",
+    reason: "แก้ไขใบแจ้งหนี้",
+  });
+
+  revalidatePath("/");
+  revalidatePath(`/print/invoice/${invoiceId}`);
+  return { ok: true, message: "แก้ไขใบแจ้งหนี้แล้ว" };
 }
 
 export async function generateBatchInvoicesAction(
