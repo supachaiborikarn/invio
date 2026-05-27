@@ -717,6 +717,12 @@ const meterSchema = z.object({
   cloudinaryVersion: z.number().optional(),
   imageWidth: z.number().optional(),
   imageHeight: z.number().optional(),
+  previousCloudinaryPublicId: z.string().optional(),
+  previousCloudinaryAssetId: z.string().optional(),
+  previousCloudinarySecureUrl: z.string().optional(),
+  previousCloudinaryVersion: z.number().optional(),
+  previousImageWidth: z.number().optional(),
+  previousImageHeight: z.number().optional(),
 });
 
 export async function recordMeterReadingAction(
@@ -742,6 +748,13 @@ export async function recordMeterReadingAction(
     cloudinaryVersion: numberValue(formData, "cloudinaryVersion") || undefined,
     imageWidth: numberValue(formData, "imageWidth") || undefined,
     imageHeight: numberValue(formData, "imageHeight") || undefined,
+    previousCloudinaryPublicId: textValue(formData, "previousCloudinaryPublicId"),
+    previousCloudinaryAssetId: textValue(formData, "previousCloudinaryAssetId"),
+    previousCloudinarySecureUrl: textValue(formData, "previousCloudinarySecureUrl"),
+    previousCloudinaryVersion:
+      numberValue(formData, "previousCloudinaryVersion") || undefined,
+    previousImageWidth: numberValue(formData, "previousImageWidth") || undefined,
+    previousImageHeight: numberValue(formData, "previousImageHeight") || undefined,
   });
 
   if (!parsed.success) {
@@ -789,6 +802,12 @@ export async function recordMeterReadingAction(
     cloudinaryVersion: parsed.data.cloudinaryVersion,
     imageWidth: parsed.data.imageWidth,
     imageHeight: parsed.data.imageHeight,
+    previousCloudinaryPublicId: parsed.data.previousCloudinaryPublicId ?? "",
+    previousCloudinaryAssetId: parsed.data.previousCloudinaryAssetId ?? "",
+    previousCloudinarySecureUrl: parsed.data.previousCloudinarySecureUrl ?? "",
+    previousCloudinaryVersion: parsed.data.previousCloudinaryVersion,
+    previousImageWidth: parsed.data.previousImageWidth,
+    previousImageHeight: parsed.data.previousImageHeight,
     warning: warning ?? "",
     createdByUserId: user.appUserId,
   }).returning({ id: meterReadings.id });

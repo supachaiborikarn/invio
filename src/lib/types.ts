@@ -103,6 +103,10 @@ export type MeterReading = {
   cloudinaryPublicId?: string;
   cloudinaryAssetId?: string;
   cloudinaryVersion?: number;
+  previousImageUrl?: string;
+  previousCloudinaryPublicId?: string;
+  previousCloudinaryAssetId?: string;
+  previousCloudinaryVersion?: number;
   warning?: string;
 };
 

@@ -528,9 +528,13 @@ export function BillingWorkspace({
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [cycleOpen, setCycleOpen] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
+  const [previousUploadResult, setPreviousUploadResult] =
+    useState<UploadResult | null>(null);
   const [uploadMessage, setUploadMessage] = useState("");
+  const [previousUploadMessage, setPreviousUploadMessage] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [isPreviousUploading, setIsPreviousUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(initialTab);
   const router = useRouter();
 
@@ -734,6 +738,36 @@ export function BillingWorkspace({
     } finally {
       setIsUploading(false);
     }
+  }
+
+  async function handlePreviousUpload(file?: File) {
+    if (!file) return;
+
+    setIsPreviousUploading(true);
+    setPreviousUploadMessage("");
+
+    try {
+      const result = await uploadMeterImage(file);
+      setPreviousUploadResult(result);
+      setPreviousUploadMessage(
+        data.cloudinaryConfigured
+          ? "อัปโหลดรูปเดือนก่อนเข้า Cloudinary แล้ว"
+          : "แสดงรูปเดือนก่อนในโหมด demo",
+      );
+    } catch (error) {
+      setPreviousUploadMessage(
+        error instanceof Error ? error.message : "อัปโหลดรูปเดือนก่อนไม่สำเร็จ",
+      );
+    } finally {
+      setIsPreviousUploading(false);
+    }
+  }
+
+  function resetMeterUploads() {
+    setUploadResult(null);
+    setPreviousUploadResult(null);
+    setUploadMessage("");
+    setPreviousUploadMessage("");
   }
 
   async function handleTenantSubmit(event: FormEvent<HTMLFormElement>) {
@@ -981,8 +1015,7 @@ export function BillingWorkspace({
       );
       setActionMessage(result.message);
       if (result.ok) {
-        setUploadResult(null);
-        setUploadMessage("");
+        resetMeterUploads();
         form.reset();
         setMeterOpen(false);
         router.refresh();
@@ -1016,6 +1049,10 @@ export function BillingWorkspace({
       cloudinaryPublicId: uploadResult?.publicId,
       cloudinaryAssetId: uploadResult?.assetId,
       cloudinaryVersion: uploadResult?.version,
+      previousImageUrl: previousUploadResult?.url,
+      previousCloudinaryPublicId: previousUploadResult?.publicId,
+      previousCloudinaryAssetId: previousUploadResult?.assetId,
+      previousCloudinaryVersion: previousUploadResult?.version,
       warning: calculation.warning,
     };
 
@@ -1029,8 +1066,7 @@ export function BillingWorkspace({
       meterReadings: [reading, ...current.meterReadings],
       invoices: invoice ? [invoice, ...current.invoices] : current.invoices,
     }));
-    setUploadResult(null);
-    setUploadMessage("");
+    resetMeterUploads();
     form.reset();
     setMeterOpen(false);
   }
@@ -1630,9 +1666,14 @@ export function BillingWorkspace({
                     data={data}
                     activeCycleId={activeCycle.id}
                     isUploading={isUploading}
+                    isPreviousUploading={isPreviousUploading}
                     uploadMessage={uploadMessage}
+                    previousUploadMessage={previousUploadMessage}
                     uploadResult={uploadResult}
+                    previousUploadResult={previousUploadResult}
                     onFileChange={handleUpload}
+                    onPreviousFileChange={handlePreviousUpload}
+                    onResetUploads={resetMeterUploads}
                     onSubmit={handleMeterSubmit}
                   />
                 ) : null}
@@ -3578,17 +3619,27 @@ function MeterDialog({
   data,
   activeCycleId,
   isUploading,
+  isPreviousUploading,
   uploadMessage,
+  previousUploadMessage,
   uploadResult,
+  previousUploadResult,
   onFileChange,
+  onPreviousFileChange,
+  onResetUploads,
   onSubmit,
 }: {
   data: DashboardData;
   activeCycleId: string;
   isUploading: boolean;
+  isPreviousUploading: boolean;
   uploadMessage: string;
+  previousUploadMessage: string;
   uploadResult: UploadResult | null;
+  previousUploadResult: UploadResult | null;
   onFileChange: (file?: File) => void;
+  onPreviousFileChange: (file?: File) => void;
+  onResetUploads: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const [unitId, setUnitId] = useState(data.units[0]?.id ?? "");
@@ -3620,6 +3671,12 @@ function MeterDialog({
     })[0];
   const previousImageSrc = meterReadingImageSrc(previousImageReading);
   const previousDisplayReading = previousImageReading ?? lastReading;
+  const selectedPreviousImageSrc = previousUploadResult?.url ?? previousImageSrc;
+  const selectedPreviousImageLabel = previousUploadResult
+    ? "รูปที่เพิ่งเลือก"
+    : previousDisplayReading
+      ? formatDate(previousDisplayReading.capturedAt)
+      : "ยังไม่มีข้อมูล";
 
   return (
     <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
@@ -3663,38 +3720,79 @@ function MeterDialog({
           name="imageHeight"
           value={uploadResult?.height ?? ""}
         />
-        <div className="grid gap-3 sm:grid-cols-2">
+        <input
+          type="hidden"
+          name="previousCloudinaryPublicId"
+          value={previousUploadResult?.publicId ?? ""}
+        />
+        <input
+          type="hidden"
+          name="previousCloudinaryAssetId"
+          value={previousUploadResult?.assetId ?? ""}
+        />
+        <input
+          type="hidden"
+          name="previousCloudinarySecureUrl"
+          value={previousUploadResult?.url ?? ""}
+        />
+        <input
+          type="hidden"
+          name="previousCloudinaryVersion"
+          value={previousUploadResult?.version ?? ""}
+        />
+        <input
+          type="hidden"
+          name="previousImageWidth"
+          value={previousUploadResult?.width ?? ""}
+        />
+        <input
+          type="hidden"
+          name="previousImageHeight"
+          value={previousUploadResult?.height ?? ""}
+        />
+        <div className="grid gap-3">
           <div className="grid gap-2">
             <Label>พื้นที่</Label>
-            <Select name="unitId" value={unitId} onValueChange={setUnitId}>
-              <SelectTrigger>
+            <Select
+              name="unitId"
+              value={unitId}
+              onValueChange={(value) => {
+                setUnitId(value);
+                onResetUploads();
+              }}
+            >
+              <SelectTrigger className="w-full min-w-0 [&_[data-slot=select-value]]:block [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:truncate">
                 <SelectValue placeholder="เลือกพื้นที่" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-w-[calc(100vw-3rem)]">
                 {data.units.map((item) => (
                   <SelectItem key={item.id} value={item.id}>
-                    {item.code} · {getTenant(data, item.tenantId)?.name ?? "-"}
+                    <span className="block max-w-[32rem] truncate">
+                      {item.code} · {getTenant(data, item.tenantId)?.name ?? "-"}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <Field
-            key={`${unit?.id ?? "unit"}-rate`}
-            label="เรทต่อหน่วย"
-            name="rate"
-            type="number"
-            step="0.01"
-            defaultValue={String(unit?.electricRate ?? 0)}
-          />
-          <Field
-            key={`${unit?.id ?? "unit"}-previous`}
-            label="เลขเดือนก่อน"
-            name="previousReading"
-            type="number"
-            defaultValue={String(lastReading?.currentReading ?? 0)}
-          />
-          <Field label="เลขเดือนนี้" name="currentReading" type="number" />
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field
+              key={`${unit?.id ?? "unit"}-rate`}
+              label="เรทต่อหน่วย"
+              name="rate"
+              type="number"
+              step="0.01"
+              defaultValue={String(unit?.electricRate ?? 0)}
+            />
+            <Field
+              key={`${unit?.id ?? "unit"}-previous`}
+              label="เลขเดือนก่อน"
+              name="previousReading"
+              type="number"
+              defaultValue={String(lastReading?.currentReading ?? 0)}
+            />
+            <Field label="เลขเดือนนี้" name="currentReading" type="number" />
+          </div>
         </div>
         <div className="grid gap-2">
           <Label htmlFor="meterImage">รูปมิเตอร์ประกอบใบแจ้งหนี้</Label>
@@ -3703,15 +3801,13 @@ function MeterDialog({
               <div className="mb-2 flex items-center justify-between gap-3 text-sm">
                 <span className="font-medium">เดือนก่อน</span>
                 <span className="text-xs text-muted-foreground">
-                  {previousDisplayReading
-                    ? formatDate(previousDisplayReading.capturedAt)
-                    : "ยังไม่มีข้อมูล"}
+                  {selectedPreviousImageLabel}
                 </span>
               </div>
               <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-sm bg-muted">
-                {previousImageSrc ? (
+                {selectedPreviousImageSrc ? (
                   <img
-                    src={previousImageSrc}
+                    src={selectedPreviousImageSrc}
                     alt="รูปมิเตอร์เดือนก่อน"
                     className="h-full w-full object-cover"
                   />
@@ -3728,6 +3824,23 @@ function MeterDialog({
                   ? formatNumber(previousDisplayReading.currentReading)
                   : "-"}
               </p>
+              <div className="mt-3 grid gap-2">
+                <Input
+                  id="previousMeterImage"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(event) =>
+                    onPreviousFileChange(event.target.files?.[0])
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  {isPreviousUploading
+                    ? "กำลังอัปโหลดรูปเดือนก่อน..."
+                    : previousUploadMessage ||
+                      "ใส่ได้ถ้ายังไม่มีรูปเดือนก่อนในระบบ"}
+                </p>
+              </div>
             </div>
 
             <div className="rounded-md border border-dashed border-border p-3">
@@ -3780,7 +3893,7 @@ function MeterDialog({
             </SelectContent>
           </Select>
         </div>
-        <Button type="submit" disabled={isUploading}>
+        <Button type="submit" disabled={isUploading || isPreviousUploading}>
           บันทึกมิเตอร์
         </Button>
       </form>

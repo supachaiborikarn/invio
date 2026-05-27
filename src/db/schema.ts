@@ -222,6 +222,18 @@ export const meterReadings = pgTable("meter_readings", {
   cloudinaryVersion: integer("cloudinary_version"),
   imageWidth: integer("image_width"),
   imageHeight: integer("image_height"),
+  previousCloudinaryPublicId: text("previous_cloudinary_public_id")
+    .notNull()
+    .default(""),
+  previousCloudinaryAssetId: text("previous_cloudinary_asset_id")
+    .notNull()
+    .default(""),
+  previousCloudinarySecureUrl: text("previous_cloudinary_secure_url")
+    .notNull()
+    .default(""),
+  previousCloudinaryVersion: integer("previous_cloudinary_version"),
+  previousImageWidth: integer("previous_image_width"),
+  previousImageHeight: integer("previous_image_height"),
   warning: text("warning").notNull().default(""),
   capturedAt: timestamp("captured_at", { withTimezone: true })
     .notNull()

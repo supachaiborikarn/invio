@@ -114,6 +114,21 @@ export function getMeterImageUrl(reading: MeterReading) {
   return reading.imageUrl || undefined;
 }
 
+export function getPreviousMeterImageUrl(reading: MeterReading) {
+  if (
+    isCloudinaryConfigured() &&
+    reading.previousCloudinaryPublicId &&
+    !reading.previousCloudinaryPublicId.startsWith("demo/")
+  ) {
+    return createSignedImageUrl(
+      reading.previousCloudinaryPublicId,
+      reading.previousCloudinaryVersion,
+    );
+  }
+
+  return reading.previousImageUrl || undefined;
+}
+
 export function getInvoiceMeterEvidence(
   data: DashboardData,
   invoice: Invoice,
@@ -162,9 +177,9 @@ export function getInvoiceMeterEvidence(
         id: reading.id,
         title: item.description,
         imageUrl: getMeterImageUrl(reading),
-        previousImageUrl: previousImageReading
-          ? getMeterImageUrl(previousImageReading)
-          : undefined,
+        previousImageUrl:
+          getPreviousMeterImageUrl(reading) ??
+          (previousImageReading ? getMeterImageUrl(previousImageReading) : undefined),
         unitCode: unit?.code ?? "",
         unitName: unit?.name ?? "",
         meterSerial: unit?.meterSerial ?? "",
@@ -306,6 +321,10 @@ export async function getDashboardData(): Promise<DashboardData> {
     cloudinaryPublicId: reading.cloudinaryPublicId,
     cloudinaryAssetId: reading.cloudinaryAssetId,
     cloudinaryVersion: reading.cloudinaryVersion ?? undefined,
+    previousImageUrl: reading.previousCloudinarySecureUrl,
+    previousCloudinaryPublicId: reading.previousCloudinaryPublicId,
+    previousCloudinaryAssetId: reading.previousCloudinaryAssetId,
+    previousCloudinaryVersion: reading.previousCloudinaryVersion ?? undefined,
     warning: reading.warning || undefined,
   }));
 
