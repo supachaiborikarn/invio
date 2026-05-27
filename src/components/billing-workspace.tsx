@@ -24,6 +24,7 @@ import {
   Search,
   Settings,
   Sparkles,
+  Trash2,
   Truck,
   Upload,
   Users,
@@ -40,6 +41,7 @@ import {
   createInvoiceForUnitAction,
   createTenantAction,
   generateBatchInvoicesAction,
+  importSampleTenantsAction,
   recordMeterReadingAction,
   recordPaymentAction,
   sendInvoiceReminderEmailAction,
@@ -202,6 +204,143 @@ function field(form: HTMLFormElement, name: string) {
 
 function amountField(form: HTMLFormElement, name: string) {
   return Number(field(form, name).replace(/,/g, "")) || 0;
+}
+
+type FuelTripFormRow = {
+  id: string;
+  date: string;
+  label: string;
+  quantity: string;
+  unitPrice: string;
+};
+
+type FuelTripPayloadItem = {
+  date: string;
+  label: string;
+  quantity: number;
+  unitPrice: number;
+};
+
+const sampleTenantsForDemo: Tenant[] = [
+  {
+    id: "tenant-bnt",
+    code: "BNT",
+    name: "บริษัท บีเอ็นที เอ็กซ์เพรส จำกัด (สำนักงานใหญ่)",
+    contactName: "",
+    taxId: "0505562019812",
+    phone: "",
+    email: "",
+    billingAddress:
+      "เลขที่ 8 หมู่ที่ 4 ตำบลหนองป่าครั่ง\nอำเภอเมืองเชียงใหม่ จังหวัดเชียงใหม่ 50000",
+    vatEnabled: true,
+    status: "active",
+  },
+  {
+    id: "tenant-lazada",
+    code: "LAZADA",
+    name: "บริษัท ลาซาด้า เอ็กซ์เพรส จำกัด (สำนักงานใหญ่)",
+    contactName: "",
+    taxId: "0-1055-58080-77-8",
+    phone: "",
+    email: "",
+    billingAddress:
+      "689 อาคารภิรัช ชั้นที่ 29 ห้องเลขที่ 2904-2906 ซ.สุขุมวิท 35\nถ.สุขุมวิท แขวงคลองตันเหนือ เขตวัฒนา กรุงเทพมหานคร 10110",
+    vatEnabled: true,
+    status: "active",
+  },
+  {
+    id: "tenant-flash",
+    code: "FLASH",
+    name: "บริษัท แฟลช เอ็กซ์เพรส จำกัด สำนักงานใหญ่",
+    contactName: "",
+    taxId: "0105560159254",
+    phone: "",
+    email: "",
+    billingAddress:
+      "เลขที่ 161 อาคารยูนิลีเวอร์ เฮ้าส์ ชั้นที่ 7 และ 8 ถนนพระรามเก้า\nแขวงห้วยขวาง เขตห้วยขวาง กรุงเทพมหานคร 10310",
+    vatEnabled: true,
+    status: "active",
+  },
+  {
+    id: "tenant-taifah",
+    code: "TAIFAH",
+    name: "หจก. ใต้ฟ้าปิโตรเลียม",
+    contactName: "",
+    taxId: "",
+    phone: "",
+    email: "",
+    billingAddress: "",
+    vatEnabled: true,
+    status: "active",
+  },
+  {
+    id: "tenant-daopaisaan",
+    code: "DAOPAISAAN",
+    name: "ดาวไพศาล",
+    contactName: "",
+    taxId: "",
+    phone: "",
+    email: "",
+    billingAddress: "",
+    vatEnabled: true,
+    status: "active",
+  },
+];
+
+function createFuelTripRow(defaultDate: string, index: number): FuelTripFormRow {
+  return {
+    id: createId("fuel-trip"),
+    date: defaultDate,
+    label: `รอบวิ่ง ${index + 1}`,
+    quantity: "1",
+    unitPrice: "0",
+  };
+}
+
+function normalizeFuelTripRows(rows: FuelTripFormRow[]): FuelTripPayloadItem[] {
+  return rows.map((row, index) => {
+    const quantity = Math.max(Math.round(Number(row.quantity) || 1), 1);
+    const unitPrice = Number(String(row.unitPrice).replace(/,/g, "")) || 0;
+
+    return {
+      date: row.date,
+      label: row.label.trim() || `รอบวิ่ง ${index + 1}`,
+      quantity,
+      unitPrice,
+    };
+  });
+}
+
+function fuelTripItemsFromJson(value: string): InvoiceItem[] {
+  if (!value) return [];
+
+  try {
+    const rows = JSON.parse(value) as FuelTripPayloadItem[];
+
+    if (!Array.isArray(rows)) return [];
+
+    return rows
+      .map((row, index): InvoiceItem => {
+        const quantity = Math.max(Math.round(Number(row.quantity) || 1), 1);
+        const unitPrice = Number(row.unitPrice) || 0;
+        const tripLabel = row.label?.trim() || `รอบวิ่ง ${index + 1}`;
+        const tripDate = row.date ? formatDate(row.date) : "";
+
+        return {
+          id: createId("item"),
+          type: "fuel_transport",
+          description: ["ค่าขนส่งน้ำมัน", tripLabel, tripDate]
+            .filter(Boolean)
+            .join(" "),
+          quantity,
+          unitPrice,
+          amount: quantity * unitPrice,
+        };
+      })
+      .filter((item) => item.unitPrice > 0);
+  } catch {
+    return [];
+  }
 }
 
 function today() {
@@ -539,6 +678,30 @@ export function BillingWorkspace({
     setTenantOpen(false);
   }
 
+  async function handleImportSampleTenants() {
+    if (!data.databaseConfigured) {
+      setData((current) => {
+        const existingCodes = new Set(
+          current.tenants.map((tenant) => tenant.code),
+        );
+        const newTenants = sampleTenantsForDemo.filter(
+          (tenant) => !existingCodes.has(tenant.code),
+        );
+
+        return {
+          ...current,
+          tenants: [...current.tenants, ...newTenants],
+        };
+      });
+      setActionMessage("เพิ่มลูกค้าจากตัวอย่างแล้ว");
+      return;
+    }
+
+    const result = await importSampleTenantsAction();
+    setActionMessage(result.message);
+    if (result.ok) router.refresh();
+  }
+
   async function handleRentInvoiceSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -568,31 +731,37 @@ export function BillingWorkspace({
     const unit = getUnit(data, field(form, "unitId"));
     const tenantId = invoiceType === "rent" ? unit?.tenantId : field(form, "tenantId");
     const tenant = tenantId ? getTenant(data, tenantId) : undefined;
-    const quantity =
-      invoiceType === "rent"
-        ? 1
-        : Math.max(Math.round(amountField(form, "quantity")), 1);
     const unitPrice =
       invoiceType === "rent"
         ? amountField(form, "rentAmount") || unit?.rentAmount || 0
         : amountField(form, "unitPrice");
+    const fuelTripItems =
+      invoiceType === "fuel_transport"
+        ? fuelTripItemsFromJson(field(form, "itemsJson"))
+        : [];
 
-    if (!tenantId || !tenant || unitPrice <= 0) return;
+    if (
+      !tenantId ||
+      !tenant ||
+      (invoiceType === "rent" && unitPrice <= 0) ||
+      (invoiceType === "fuel_transport" && !fuelTripItems.length)
+    ) {
+      return;
+    }
 
-    const item: InvoiceItem = {
+    const rentItem: InvoiceItem = {
       id: createId("item"),
       type: invoiceType,
       description:
         field(form, "description") ||
-        (invoiceType === "rent"
-          ? `ค่าเช่าพื้นที่ ${unit?.code ?? ""}`
-          : `ค่าขนส่งน้ำมัน รอบ ${activeCycle.label}`),
-      quantity,
+        `ค่าเช่าพื้นที่ ${unit?.code ?? ""}`,
+      quantity: 1,
       unitPrice,
-      amount: quantity * unitPrice,
+      amount: unitPrice,
     };
+    const items = invoiceType === "fuel_transport" ? fuelTripItems : [rentItem];
     const totalsForInvoice = calculateInvoiceTotals({
-      items: [item],
+      items,
       discount: amountField(form, "discount"),
       vatEnabled: field(form, "vatEnabled") === "yes",
       vatRate: data.organization.vatRate,
@@ -605,10 +774,15 @@ export function BillingWorkspace({
       type: invoiceType,
       issueDate: today(),
       dueDate: field(form, "dueDate") || activeCycle.dueDate,
-      items: [item],
+      items,
       vatEnabled: field(form, "vatEnabled") === "yes",
       status: "issued",
-      notes: tenant ? `ผู้เช่า ${tenant.name}` : "",
+      notes:
+        invoiceType === "fuel_transport"
+          ? field(form, "description")
+          : tenant
+            ? `ผู้เช่า ${tenant.name}`
+            : "",
       ...totalsForInvoice,
     };
 
@@ -1063,6 +1237,11 @@ export function BillingWorkspace({
           address: field(form, "address"),
           phone: field(form, "phone"),
           email: field(form, "email"),
+          bankAccountName: field(form, "bankAccountName"),
+          bankAccountNumber: field(form, "bankAccountNumber"),
+          bankName: field(form, "bankName"),
+          bankBranch: field(form, "bankBranch"),
+          paymentLineId: field(form, "paymentLineId"),
           vatRate: amountField(form, "vatRate"),
           vatEnabledDefault: field(form, "vatEnabledDefault") === "yes",
         },
@@ -1507,12 +1686,22 @@ export function BillingWorkspace({
                   />
                 </div>
                 <Dialog open={tenantOpen} onOpenChange={setTenantOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline">
-                      <Plus className="size-4" />
-                      เพิ่มผู้เช่า
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleImportSampleTenants}
+                    >
+                      <Upload className="size-4" />
+                      เติมลูกค้าตัวอย่าง
                     </Button>
-                  </DialogTrigger>
+                    <DialogTrigger asChild>
+                      <Button variant="outline">
+                        <Plus className="size-4" />
+                        เพิ่มผู้เช่า
+                      </Button>
+                    </DialogTrigger>
+                  </div>
                   <TenantDialog onSubmit={handleTenantSubmit} />
                 </Dialog>
               </section>
@@ -2587,6 +2776,33 @@ function SettingsPanel({
             <Field label="โทร" name="phone" defaultValue={data.organization.phone} />
             <Field label="อีเมล" name="email" type="email" defaultValue={data.organization.email} />
             <Field label="VAT เริ่มต้น" name="vatRate" type="number" step="0.01" defaultValue={String(data.organization.vatRate)} />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field
+                label="ชื่อบัญชี"
+                name="bankAccountName"
+                defaultValue={data.organization.bankAccountName}
+              />
+              <Field
+                label="เลขที่บัญชี"
+                name="bankAccountNumber"
+                defaultValue={data.organization.bankAccountNumber}
+              />
+              <Field
+                label="ธนาคาร"
+                name="bankName"
+                defaultValue={data.organization.bankName}
+              />
+              <Field
+                label="สาขา"
+                name="bankBranch"
+                defaultValue={data.organization.bankBranch}
+              />
+            </div>
+            <Field
+              label="Line ID สำหรับแจ้งโอน"
+              name="paymentLineId"
+              defaultValue={data.organization.paymentLineId}
+            />
             <div className="grid gap-2">
               <Label htmlFor="orgAddress">ที่อยู่</Label>
               <Textarea
@@ -3220,22 +3436,61 @@ function FuelTransportInvoiceDialog({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const [tenantId, setTenantId] = useState(data.tenants[0]?.id ?? "");
+  const defaultTripDate = activeCycle.periodStart.slice(0, 10);
+  const [tripRows, setTripRows] = useState<FuelTripFormRow[]>(() => [
+    createFuelTripRow(defaultTripDate, 0),
+  ]);
   const tenant = getTenant(data, tenantId);
+  const normalizedTrips = useMemo(
+    () => normalizeFuelTripRows(tripRows),
+    [tripRows],
+  );
+  const tripSubtotal = normalizedTrips.reduce(
+    (sum, row) => sum + row.quantity * row.unitPrice,
+    0,
+  );
+  const itemsJson = JSON.stringify(normalizedTrips);
+
+  const updateTripRow = (
+    rowId: string,
+    key: keyof Omit<FuelTripFormRow, "id">,
+    value: string,
+  ) => {
+    setTripRows((current) =>
+      current.map((row) =>
+        row.id === rowId ? { ...row, [key]: value } : row,
+      ),
+    );
+  };
+
+  const addTripRow = () => {
+    setTripRows((current) => [
+      ...current,
+      createFuelTripRow(defaultTripDate, current.length),
+    ]);
+  };
+
+  const removeTripRow = (rowId: string) => {
+    setTripRows((current) =>
+      current.length > 1 ? current.filter((row) => row.id !== rowId) : current,
+    );
+  };
 
   return (
     <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
       <DialogHeader>
         <DialogTitle>ออกใบแจ้งหนี้ค่าขนส่งน้ำมัน</DialogTitle>
-        <DialogDescription>เลือกผู้ถูกเรียกเก็บและกรอกยอดขนส่ง</DialogDescription>
+        <DialogDescription>เลือกผู้ถูกเรียกเก็บและกรอกรอบวิ่ง</DialogDescription>
       </DialogHeader>
       <form onSubmit={onSubmit} className="grid gap-4">
         <input type="hidden" name="billingCycleId" value={activeCycle.id} />
         <input type="hidden" name="type" value="fuel_transport" />
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="grid gap-2">
+        <input type="hidden" name="itemsJson" value={itemsJson} />
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_12rem]">
+          <div className="grid min-w-0 gap-2">
             <Label>ผู้ถูกเรียกเก็บ</Label>
             <Select name="tenantId" value={tenantId} onValueChange={setTenantId}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full min-w-0">
                 <SelectValue placeholder="เลือกผู้ถูกเรียกเก็บ" />
               </SelectTrigger>
               <SelectContent>
@@ -3248,18 +3503,99 @@ function FuelTransportInvoiceDialog({
             </Select>
           </div>
           <Field
-            label="จำนวนเที่ยว"
-            name="quantity"
-            type="number"
-            defaultValue="1"
+            label="กำหนดชำระ"
+            name="dueDate"
+            type="date"
+            defaultValue={activeCycle.dueDate.slice(0, 10)}
           />
-          <Field
-            label="ค่าขนส่งต่อหน่วย"
-            name="unitPrice"
-            type="number"
-            step="0.01"
-            defaultValue="0"
-          />
+        </div>
+        <div className="grid gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <Label>รายการรอบวิ่ง</Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addTripRow}
+            >
+              <Plus className="size-4" />
+              เพิ่มรอบวิ่ง
+            </Button>
+          </div>
+          <div className="grid gap-3">
+            {tripRows.map((row, index) => (
+              <div
+                key={row.id}
+                className="grid gap-3 rounded-lg border p-3 lg:grid-cols-[10rem_minmax(0,1fr)_7rem_10rem_2.5rem]"
+              >
+                <div className="grid gap-2">
+                  <Label htmlFor={`fuelTripDate-${row.id}`}>วันที่วิ่ง</Label>
+                  <Input
+                    id={`fuelTripDate-${row.id}`}
+                    type="date"
+                    value={row.date}
+                    onChange={(event) =>
+                      updateTripRow(row.id, "date", event.target.value)
+                    }
+                  />
+                </div>
+                <div className="grid min-w-0 gap-2">
+                  <Label htmlFor={`fuelTripLabel-${row.id}`}>รอบวิ่ง</Label>
+                  <Input
+                    id={`fuelTripLabel-${row.id}`}
+                    value={row.label}
+                    placeholder={`รอบวิ่ง ${index + 1}`}
+                    onChange={(event) =>
+                      updateTripRow(row.id, "label", event.target.value)
+                    }
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor={`fuelTripQuantity-${row.id}`}>จำนวนเที่ยว</Label>
+                  <Input
+                    id={`fuelTripQuantity-${row.id}`}
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={row.quantity}
+                    onChange={(event) =>
+                      updateTripRow(row.id, "quantity", event.target.value)
+                    }
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor={`fuelTripPrice-${row.id}`}>ค่าเที่ยว</Label>
+                  <Input
+                    id={`fuelTripPrice-${row.id}`}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={row.unitPrice}
+                    onChange={(event) =>
+                      updateTripRow(row.id, "unitPrice", event.target.value)
+                    }
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="mt-6 size-9"
+                  disabled={tripRows.length === 1}
+                  onClick={() => removeTripRow(row.id)}
+                >
+                  <Trash2 className="size-4" />
+                  <span className="sr-only">ลบรอบวิ่ง</span>
+                </Button>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm">
+            <span className="text-muted-foreground">รวมก่อน VAT</span>
+            <span className="font-semibold">{formatCurrency(tripSubtotal)}</span>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field
             label="ส่วนลด"
             name="discount"
@@ -3267,34 +3603,28 @@ function FuelTransportInvoiceDialog({
             step="0.01"
             defaultValue="0"
           />
-          <Field
-            label="กำหนดชำระ"
-            name="dueDate"
-            type="date"
-            defaultValue={activeCycle.dueDate.slice(0, 10)}
-          />
+          <div className="grid gap-2">
+            <Label>VAT</Label>
+            <Select
+              key={`${tenantId}-fuel-vat`}
+              name="vatEnabled"
+              defaultValue={tenant?.vatEnabled ?? true ? "yes" : "no"}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="yes">คิด VAT</SelectItem>
+                <SelectItem value="no">ไม่คิด VAT</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <Field
           label="รายละเอียด"
           name="description"
-          defaultValue={`ค่าขนส่งน้ำมัน รอบ ${activeCycle.label}`}
+          defaultValue={`ค่าขนส่งน้ำมัน ${activeCycle.label}`}
         />
-        <div className="grid gap-2">
-          <Label>VAT</Label>
-          <Select
-            key={`${tenantId}-fuel-vat`}
-            name="vatEnabled"
-            defaultValue={tenant?.vatEnabled ?? true ? "yes" : "no"}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="yes">คิด VAT</SelectItem>
-              <SelectItem value="no">ไม่คิด VAT</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
         <Button type="submit" disabled={!data.tenants.length}>
           ออกใบแจ้งหนี้
         </Button>

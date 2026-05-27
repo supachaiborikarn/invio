@@ -45,6 +45,11 @@ export type Organization = {
   address: string;
   phone: string;
   email: string;
+  bankAccountName: string;
+  bankAccountNumber: string;
+  bankName: string;
+  bankBranch: string;
+  paymentLineId: string;
   vatRate: number;
   vatEnabledDefault: boolean;
 };

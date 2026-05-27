@@ -73,6 +73,11 @@ export const organizations = pgTable("organizations", {
   address: text("address").notNull().default(""),
   phone: text("phone").notNull().default(""),
   email: text("email").notNull().default(""),
+  bankAccountName: text("bank_account_name").notNull().default(""),
+  bankAccountNumber: text("bank_account_number").notNull().default(""),
+  bankName: text("bank_name").notNull().default(""),
+  bankBranch: text("bank_branch").notNull().default(""),
+  paymentLineId: text("payment_line_id").notNull().default(""),
   vatRateBasisPoints: integer("vat_rate_basis_points").notNull().default(700),
   vatEnabledDefault: boolean("vat_enabled_default").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })

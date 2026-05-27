@@ -117,6 +117,77 @@ function isManualInvoiceType(value: string): value is (typeof manualInvoiceTypes
   return manualInvoiceTypes.includes(value as (typeof manualInvoiceTypes)[number]);
 }
 
+const fuelTripItemsSchema = z.array(
+  z.object({
+    date: z.string().optional(),
+    label: z.string().optional(),
+    quantity: z.coerce.number(),
+    unitPrice: z.coerce.number(),
+  }),
+);
+
+function formatFuelTripDate(value?: string) {
+  if (!value) return "";
+
+  const date = toDateValue(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat("th-TH", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
+function parseFuelTripItems(value: string): ActionFailure | { ok: true; items: InvoiceItem[] } {
+  if (!value) {
+    return { ok: false, message: "ต้องเพิ่มรอบวิ่งอย่างน้อย 1 รายการ" };
+  }
+
+  let payload: unknown;
+
+  try {
+    payload = JSON.parse(value);
+  } catch {
+    return { ok: false, message: "รายการรอบวิ่งไม่ถูกต้อง" };
+  }
+
+  const parsed = fuelTripItemsSchema.safeParse(payload);
+
+  if (!parsed.success) {
+    return { ok: false, message: "รายการรอบวิ่งไม่ถูกต้อง" };
+  }
+
+  const items = parsed.data
+    .map((trip, index): InvoiceItem => {
+      const quantity = Math.max(Math.round(trip.quantity), 1);
+      const unitPrice = Number.isFinite(trip.unitPrice) ? trip.unitPrice : 0;
+      const tripLabel = trip.label?.trim() || `รอบวิ่ง ${index + 1}`;
+      const tripDate = formatFuelTripDate(trip.date);
+      const description = [
+        "ค่าขนส่งน้ำมัน",
+        tripLabel,
+        tripDate,
+      ].filter(Boolean).join(" ");
+
+      return {
+        id: `fuel-trip-${index + 1}`,
+        type: "fuel_transport",
+        description,
+        quantity,
+        unitPrice,
+        amount: quantity * unitPrice,
+      };
+    })
+    .filter((item) => item.unitPrice > 0);
+
+  if (!items.length) {
+    return { ok: false, message: "ต้องกรอกค่าเที่ยวอย่างน้อย 1 รอบวิ่ง" };
+  }
+
+  return { ok: true, items };
+}
+
 const tenantSchema = z.object({
   code: z.string().min(1),
   name: z.string().min(1),
@@ -127,6 +198,42 @@ const tenantSchema = z.object({
   billingAddress: z.string().optional(),
   vatEnabled: z.boolean(),
 });
+
+const sampleTenants = [
+  {
+    code: "BNT",
+    name: "บริษัท บีเอ็นที เอ็กซ์เพรส จำกัด (สำนักงานใหญ่)",
+    taxId: "0505562019812",
+    billingAddress:
+      "เลขที่ 8 หมู่ที่ 4 ตำบลหนองป่าครั่ง\nอำเภอเมืองเชียงใหม่ จังหวัดเชียงใหม่ 50000",
+  },
+  {
+    code: "LAZADA",
+    name: "บริษัท ลาซาด้า เอ็กซ์เพรส จำกัด (สำนักงานใหญ่)",
+    taxId: "0-1055-58080-77-8",
+    billingAddress:
+      "689 อาคารภิรัช ชั้นที่ 29 ห้องเลขที่ 2904-2906 ซ.สุขุมวิท 35\nถ.สุขุมวิท แขวงคลองตันเหนือ เขตวัฒนา กรุงเทพมหานคร 10110",
+  },
+  {
+    code: "FLASH",
+    name: "บริษัท แฟลช เอ็กซ์เพรส จำกัด สำนักงานใหญ่",
+    taxId: "0105560159254",
+    billingAddress:
+      "เลขที่ 161 อาคารยูนิลีเวอร์ เฮ้าส์ ชั้นที่ 7 และ 8 ถนนพระรามเก้า\nแขวงห้วยขวาง เขตห้วยขวาง กรุงเทพมหานคร 10310",
+  },
+  {
+    code: "TAIFAH",
+    name: "หจก. ใต้ฟ้าปิโตรเลียม",
+    taxId: "",
+    billingAddress: "",
+  },
+  {
+    code: "DAOPAISAAN",
+    name: "ดาวไพศาล",
+    taxId: "",
+    billingAddress: "",
+  },
+] as const;
 
 export async function createTenantAction(
   _previousState: ActionResult,
@@ -163,6 +270,47 @@ export async function createTenantAction(
 
   revalidatePath("/");
   return { ok: true, message: "เพิ่มผู้เช่าแล้ว" };
+}
+
+export async function importSampleTenantsAction(): Promise<ActionResult> {
+  const user = await requireAdminAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const db = getDb();
+  const organizationId = await getDefaultOrganizationId();
+  const existingRows = await db
+    .select({ code: tenants.code })
+    .from(tenants)
+    .where(eq(tenants.organizationId, organizationId));
+  const existingCodes = new Set(existingRows.map((tenant) => tenant.code));
+  const newTenants = sampleTenants.filter(
+    (tenant) => !existingCodes.has(tenant.code),
+  );
+
+  if (!newTenants.length) {
+    return { ok: true, message: "มีลูกค้าจากตัวอย่างครบแล้ว" };
+  }
+
+  await db.insert(tenants).values(
+    newTenants.map((tenant) => ({
+      organizationId,
+      code: tenant.code,
+      name: tenant.name,
+      taxId: tenant.taxId,
+      billingAddress: tenant.billingAddress,
+      vatEnabled: true,
+      status: "active" as const,
+    })),
+  );
+
+  revalidatePath("/");
+  return {
+    ok: true,
+    message: `เพิ่มลูกค้าจากตัวอย่าง ${newTenants.length} รายแล้ว`,
+  };
 }
 
 export async function updateTenantAction(
@@ -321,6 +469,11 @@ export async function updateOrganizationAction(
       address: textValue(formData, "address"),
       phone: textValue(formData, "phone"),
       email: textValue(formData, "email"),
+      bankAccountName: textValue(formData, "bankAccountName"),
+      bankAccountNumber: textValue(formData, "bankAccountNumber"),
+      bankName: textValue(formData, "bankName"),
+      bankBranch: textValue(formData, "bankBranch"),
+      paymentLineId: textValue(formData, "paymentLineId"),
       vatRateBasisPoints: Math.round(numberValue(formData, "vatRate") * 100),
       vatEnabledDefault: booleanValue(formData, "vatEnabledDefault"),
       updatedAt: new Date(),
@@ -650,6 +803,7 @@ export async function createInvoiceForUnitAction(
   const discount = numberValue(formData, "discount");
   const vatEnabled = booleanValue(formData, "vatEnabled");
   const dueDate = textValue(formData, "dueDate");
+  const itemsJson = textValue(formData, "itemsJson");
 
   const db = getDb();
   const organizationId = await getDefaultOrganizationId();
@@ -681,22 +835,36 @@ export async function createInvoiceForUnitAction(
     !billingCycleId ||
     !description ||
     !dueDate ||
-    unitPrice <= 0 ||
     (type === "rent" && !unitId)
   ) {
     return { ok: false, message: "ข้อมูลใบแจ้งหนี้ไม่ครบ" };
   }
 
-  const item = {
-    id: "new",
-    type,
-    description,
-    quantity,
-    unitPrice,
-    amount: quantity * unitPrice,
-  };
+  let items: InvoiceItem[];
+
+  if (type === "fuel_transport" && itemsJson) {
+    const parsedItems = parseFuelTripItems(itemsJson);
+    if (!parsedItems.ok) return parsedItems;
+    items = parsedItems.items;
+  } else {
+    if (unitPrice <= 0) {
+      return { ok: false, message: "ข้อมูลใบแจ้งหนี้ไม่ครบ" };
+    }
+
+    items = [
+      {
+        id: "new",
+        type,
+        description,
+        quantity,
+        unitPrice,
+        amount: quantity * unitPrice,
+      },
+    ];
+  }
+
   const totals = calculateInvoiceTotals({
-    items: [item],
+    items,
     discount,
     vatEnabled,
   });
@@ -730,17 +898,20 @@ export async function createInvoiceForUnitAction(
       totalSatang: toSatang(totals.total),
       balanceSatang: toSatang(totals.balance),
       status: "issued",
+      notes: type === "fuel_transport" ? description : "",
     })
     .returning({ id: invoices.id });
 
-  await db.insert(invoiceItems).values({
-    invoiceId: invoice.id,
-    type,
-    description,
-    quantity,
-    unitPriceSatang: toSatang(unitPrice),
-    amountSatang: toSatang(item.amount),
-  });
+  await db.insert(invoiceItems).values(
+    items.map((item) => ({
+      invoiceId: invoice.id,
+      type: item.type,
+      description: item.description,
+      quantity: item.quantity,
+      unitPriceSatang: toSatang(item.unitPrice),
+      amountSatang: toSatang(item.amount),
+    })),
+  );
 
   revalidatePath("/");
   return { ok: true, message: "ออกใบแจ้งหนี้แล้ว" };
