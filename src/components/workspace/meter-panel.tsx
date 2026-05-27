@@ -306,41 +306,43 @@ export function MeterList({
                 </div>
               )}
             </div>
-            <CardContent className="grid gap-3 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-sm">
+            <CardContent className="flex flex-col gap-3 p-4 min-w-0">
+              <div className="flex items-start justify-between gap-3 min-w-0 w-full">
+                <div className="flex-1 min-w-0">
+                  <p className="truncate font-semibold text-sm" title={`${unit?.code ?? "-"} · ${tenant?.name ?? "-"}`}>
                     {unit?.code ?? "-"} · {tenant?.name ?? "-"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {formatDate(reading.capturedAt)}
                   </p>
                 </div>
-                {reading.warning ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge className="rounded-sm bg-[var(--tone-danger-soft)] text-[var(--tone-danger)] text-xs">
-                        ตรวจสอบ
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>{reading.warning}</TooltipContent>
-                  </Tooltip>
-                ) : (
-                  <Badge className="rounded-sm bg-[var(--tone-ok-soft)] text-[var(--tone-ok)] text-xs">
-                    ปกติ
-                  </Badge>
-                )}
+                <div className="shrink-0">
+                  {reading.warning ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge className="rounded-sm bg-[var(--tone-danger-soft)] text-[var(--tone-danger)] text-xs">
+                          ตรวจสอบ
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>{reading.warning}</TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <Badge className="rounded-sm bg-[var(--tone-ok-soft)] text-[var(--tone-ok)] text-xs">
+                      ปกติ
+                    </Badge>
+                  )}
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-2 text-sm pt-1">
+              <div className="grid grid-cols-3 gap-2 text-sm pt-1 min-w-0">
                 <Info label="ก่อน" value={formatNumber(reading.previousReading)} className="font-mono text-[var(--font-mono)]" />
                 <Info label="หลัง" value={formatNumber(reading.currentReading)} className="font-mono text-[var(--font-mono)]" />
                 <Info label="ใช้" value={`${formatNumber(reading.usageUnits)} หน่วย`} className="font-mono text-[var(--font-mono)]" />
               </div>
-              <div className="flex items-center justify-between border-t border-border/50 pt-3 text-sm">
-                <span className="text-muted-foreground">
+              <div className="flex items-center justify-between border-t border-border/50 pt-3 text-sm min-w-0 w-full">
+                <span className="text-muted-foreground shrink-0">
                   {formatCurrency(reading.rate)} / หน่วย
                 </span>
-                <span className="font-bold font-mono text-base text-foreground">
+                <span className="font-bold font-mono text-base text-foreground truncate pl-2" title={formatCurrency(reading.amount)}>
                   {formatCurrency(reading.amount)}
                 </span>
               </div>
