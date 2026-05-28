@@ -187,6 +187,15 @@ export function InvoiceDocument({
       : "",
   ].filter(Boolean);
 
+  const rawPpId = data.organization.promptpayId || data.organization.taxId || data.organization.phone || "";
+  const cleanPp = rawPpId.replace(/[^0-9]/g, "");
+  const hasValidPromptPay = cleanPp.length === 10 || cleanPp.length === 13 || cleanPp.length === 15;
+
+  const qrPayload = hasValidPromptPay ? generatePromptPayPayload(cleanPp, invoice.total) : "";
+  const qrImageUrl = qrPayload
+    ? `https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encodeURIComponent(qrPayload)}`
+    : "";
+
   return (
     <article className="mx-auto w-full max-w-[210mm] bg-white p-3 text-[12px] leading-snug text-foreground print:max-w-none print:p-0 print:text-[11.5px] print:leading-snug print:text-black">
       <section className="mx-auto flex min-h-[297mm] w-[198mm] max-w-full flex-col bg-white px-6 py-6 print:min-h-[285mm] print:w-full print:px-0 print:py-0">
@@ -294,30 +303,48 @@ export function InvoiceDocument({
         </table>
 
         <section className="mt-4 grid gap-4 print:mt-3 sm:grid-cols-[minmax(0,1fr)_72mm]">
-          <div className="grid content-start gap-3">
-            <div className="rounded-sm border border-border bg-secondary/40 p-3 print:border-black print:bg-white print:p-2">
-              <p className="text-[11px] text-muted-foreground print:text-[10.5px] print:text-black">
-                จำนวนเงินทั้งสิ้น
-              </p>
-              <p className="mt-1 text-base font-semibold print:text-[14px]">
-                {thaiBahtText(invoice.total)}
-              </p>
-            </div>
-            <div className="rounded-sm border border-border p-3 print:border-black print:p-2">
-              <p className="font-semibold">ชำระเงิน</p>
-              <div className="mt-2 grid gap-1 text-[11px] text-muted-foreground print:text-[10.5px] print:text-black">
-                <p>อ้างอิงเลขที่เอกสาร {invoice.invoiceNo}</p>
-                {paymentLines.length ? (
-                  paymentLines.map((line) => <p key={line}>{line}</p>)
-                ) : (
-                  <p>
-                    ช่องทางออนไลน์{" "}
-                    {data.stripeConfigured ? "PromptPay ผ่านลิงก์ผู้เช่า" : "ลิงก์ผู้เช่า"}
-                  </p>
-                )}
-                <p>ติดต่อ {contactValue || "-"}</p>
+          <div className={`grid content-start gap-3 ${hasValidPromptPay ? "grid-cols-1 sm:grid-cols-[minmax(0,1fr)_120px] print:grid-cols-[minmax(0,1fr)_110px]" : ""}`}>
+            <div className="grid content-start gap-3">
+              <div className="rounded-sm border border-border bg-secondary/40 p-3 print:border-black print:bg-white print:p-2">
+                <p className="text-[11px] text-muted-foreground print:text-[10.5px] print:text-black">
+                  จำนวนเงินทั้งสิ้น
+                </p>
+                <p className="mt-1 text-base font-semibold print:text-[14px]">
+                  {thaiBahtText(invoice.total)}
+                </p>
+              </div>
+              <div className="rounded-sm border border-border p-3 print:border-black print:p-2">
+                <p className="font-semibold">ชำระเงิน</p>
+                <div className="mt-2 grid gap-1 text-[11px] text-muted-foreground print:text-[10.5px] print:text-black">
+                  <p>อ้างอิงเลขที่เอกสาร {invoice.invoiceNo}</p>
+                  {paymentLines.length ? (
+                    paymentLines.map((line) => <p key={line}>{line}</p>)
+                  ) : (
+                    <p>
+                      ช่องทางออนไลน์{" "}
+                      {data.stripeConfigured ? "PromptPay ผ่านลิงก์ผู้เช่า" : "ลิงก์ผู้เช่า"}
+                    </p>
+                  )}
+                  <p>ติดต่อ {contactValue || "-"}</p>
+                </div>
               </div>
             </div>
+
+            {hasValidPromptPay && qrImageUrl && (
+              <div className="flex flex-col items-center justify-center rounded-sm border border-border p-2 bg-white print:border-black print:p-1.5 self-stretch">
+                <img
+                  src={qrImageUrl}
+                  alt="PromptPay QR Code"
+                  className="aspect-square w-[100px] h-[100px] print:w-[90px] print:h-[90px] object-contain"
+                />
+                <div className="mt-1 text-center select-none">
+                  <p className="text-[9px] font-bold text-foreground print:text-black leading-none">พร้อมเพย์ สแกนจ่าย</p>
+                  <p className="text-[8px] text-muted-foreground mt-1 print:text-black font-mono leading-none tracking-tighter">
+                    {formatPromptPayDisplay(cleanPp)}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
           <div className="grid content-start rounded-sm border border-foreground print:border-black">
             <SummaryLine label="รวมเป็นเงิน" value={invoice.subtotal} />
@@ -575,4 +602,75 @@ function EvidenceLine({ label, value }: { label: string; value: string }) {
       <span className="font-semibold">{value}</span>
     </div>
   );
+}
+
+function crc16xmodem(data: string, crc = 0xffff): number {
+  const bytes = new TextEncoder().encode(data);
+  for (let i = 0; i < bytes.length; i++) {
+    crc = (crc ^ (bytes[i] << 8)) & 0xFFFF;
+    for (let j = 0; j < 8; j++) {
+      if ((crc & 0x8000) !== 0) {
+        crc = ((crc << 1) ^ 0x1021) & 0xFFFF;
+      } else {
+        crc = (crc << 1) & 0xFFFF;
+      }
+    }
+  }
+  return crc;
+}
+
+function generatePromptPayPayload(target: string, amount?: number): string {
+  const cleanTarget = target.replace(/[^0-9]/g, "");
+  if (!cleanTarget) return "";
+
+  const targetType =
+    cleanTarget.length >= 15
+      ? "03" // e-Wallet
+      : cleanTarget.length >= 13
+      ? "02" // Tax ID / Citizen ID
+      : "01"; // Phone number
+
+  let formattedTarget = cleanTarget;
+  if (cleanTarget.length < 13) {
+    formattedTarget = ("0000000000000" + cleanTarget.replace(/^0/, "66")).slice(-13);
+  }
+
+  const f = (id: string, value: string) => {
+    return [id, ("00" + value.length).slice(-2), value].join("");
+  };
+
+  const serialize = (xs: string[]) => xs.filter(Boolean).join("");
+
+  const data = [
+    f("00", "01"),
+    f("01", amount ? "12" : "11"),
+    f(
+      "29",
+      serialize([
+        f("00", "A000000677010111"),
+        f(targetType, formattedTarget),
+      ])
+    ),
+    f("58", "TH"),
+    f("53", "764"),
+    amount ? f("54", amount.toFixed(2)) : "",
+  ];
+
+  const dataToCrc = serialize(data) + "63" + "04";
+  const checksum = crc16xmodem(dataToCrc, 0xffff);
+  const formattedCrc = ("0000" + checksum.toString(16).toUpperCase()).slice(-4);
+  
+  data.push(f("63", formattedCrc));
+
+  return serialize(data);
+}
+
+function formatPromptPayDisplay(id: string): string {
+  if (id.length === 10) {
+    return `${id.slice(0, 3)}-${id.slice(3, 6)}-${id.slice(6)}`;
+  }
+  if (id.length === 13) {
+    return `${id.slice(0, 1)}-${id.slice(1, 5)}-${id.slice(5, 10)}-${id.slice(10, 12)}-${id.slice(12)}`;
+  }
+  return id;
 }

@@ -552,6 +552,7 @@ export async function updateOrganizationAction(
       bankName: textValue(formData, "bankName"),
       bankBranch: textValue(formData, "bankBranch"),
       paymentLineId: textValue(formData, "paymentLineId"),
+      promptpayId: textValue(formData, "promptpayId"),
       vatRateBasisPoints: Math.round(numberValue(formData, "vatRate") * 100),
       vatEnabledDefault: booleanValue(formData, "vatEnabledDefault"),
       updatedAt: new Date(),

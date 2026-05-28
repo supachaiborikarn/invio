@@ -87,6 +87,12 @@ export function SettingsPanel({
               name="paymentLineId"
               defaultValue={data.organization.paymentLineId}
             />
+            <Field
+              label="เลขพร้อมเพย์สำหรับรับชำระเงิน (เบอร์โทรศัพท์ 10 หลัก หรือเลขผู้เสียภาษี 13 หลัก)"
+              name="promptpayId"
+              defaultValue={data.organization.promptpayId}
+              placeholder="เช่น 0812345678 หรือ 0623539000911"
+            />
             <div className="grid gap-2">
               <Label htmlFor="orgAddress">ที่อยู่ผู้ออกเอกสาร</Label>
               <Textarea

@@ -179,6 +179,7 @@ export const demoDashboardData: DashboardData = {
     bankName: "กรุงไทย",
     bankBranch: "ชากังราว",
     paymentLineId: "be-bie",
+    promptpayId: "0812345678",
     vatRate: 7,
     vatEnabledDefault: true,
   },

@@ -50,6 +50,7 @@ export type Organization = {
   bankName: string;
   bankBranch: string;
   paymentLineId: string;
+  promptpayId: string;
   vatRate: number;
   vatEnabledDefault: boolean;
 };

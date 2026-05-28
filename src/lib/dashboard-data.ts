@@ -443,6 +443,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       bankName: organization.bankName,
       bankBranch: organization.bankBranch,
       paymentLineId: organization.paymentLineId,
+      promptpayId: organization.promptpayId,
       vatRate: organization.vatRateBasisPoints / 100,
       vatEnabledDefault: organization.vatEnabledDefault,
     },

@@ -1,0 +1,1 @@
+ALTER TABLE "organizations" ADD COLUMN "promptpay_id" text DEFAULT '' NOT NULL;
