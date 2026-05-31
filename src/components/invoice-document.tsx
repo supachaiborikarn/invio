@@ -487,15 +487,15 @@ function FuelTransportInvoiceDocument({
     : "";
 
   return (
-    <article className="mx-auto w-full max-w-[297mm] bg-white p-3 text-[10px] leading-tight text-black print:max-w-none print:p-0">
+    <article className="mx-auto w-full max-w-[297mm] bg-white p-3 text-[10.5px] leading-tight text-black print:max-w-none print:p-0">
       <style>
-        {"@media print { @page { size: A4 landscape; margin: 5mm; } }"}
+        {"@media print { @page { size: A4 landscape; margin: 5mm; } .fuel-print-sheet { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }"}
       </style>
-      <section className="mx-auto grid min-h-[198mm] w-[286mm] max-w-full grid-rows-[auto_auto_1fr_auto] gap-2 border border-black bg-white p-4 print:min-h-[200mm] print:w-full print:gap-1.5 print:p-2">
-        <header className="grid grid-cols-[82mm_minmax(0,1fr)_64mm] gap-3 border-b-2 border-black pb-2">
-          <div>
-            <h1 className="text-[18px] font-bold leading-snug">{issuer.name}</h1>
-            <div className="mt-1 space-y-0.5">
+      <section className="fuel-print-sheet mx-auto grid min-h-[198mm] w-[286mm] max-w-full grid-rows-[auto_auto_1fr_auto] gap-2 border-[1.5px] border-black bg-white p-4 print:min-h-[200mm] print:w-full print:gap-1.5 print:p-2">
+        <header className="grid grid-cols-[100mm_minmax(0,1fr)_64mm] gap-4 border-b-2 border-black pb-3">
+          <div className="min-w-0">
+            <h1 className="text-[30px] font-bold leading-none tracking-normal">{issuer.name}</h1>
+            <div className="mt-2.5 space-y-0.5 text-[10px] leading-tight">
               {issuerLines.map((line) => (
                 <p key={line}>{line}</p>
               ))}
@@ -503,12 +503,14 @@ function FuelTransportInvoiceDocument({
               <p>โทร {issuer.phone || "-"} {issuer.email ? `อีเมล ${issuer.email}` : ""}</p>
             </div>
           </div>
-          <div className="text-center">
-            <p className="text-[11px] font-semibold">เอกสารเรียกเก็บเงิน</p>
-            <h2 className="mt-1 text-[24px] font-bold">ใบแจ้งหนี้ค่าขนส่งน้ำมัน</h2>
-            <p className="mt-1 text-[13px] font-semibold">{currentMonthLabel}</p>
+          <div className="flex min-w-0 flex-col items-center justify-center text-center">
+            <p className="text-[10.5px] font-semibold text-neutral-600">เอกสารเรียกเก็บเงิน</p>
+            <h2 className="mt-1 text-[24px] font-bold leading-none">ใบแจ้งหนี้ค่าขนส่งน้ำมัน</h2>
+            <p className="mt-2 rounded-sm bg-neutral-100 px-5 py-1 text-[22px] font-bold leading-none">
+              {currentMonthLabel}
+            </p>
           </div>
-          <div className="grid content-start gap-1 border border-black p-2 text-[10px]">
+          <div className="grid content-start gap-1 border border-black bg-neutral-50 p-2 text-[10px]">
             <DocMeta label="เลขที่เอกสาร" value={invoice.invoiceNo} />
             <DocMeta label="วันที่ออก" value={formatInvoiceDate(invoice.issueDate)} />
             <DocMeta label="ครบกำหนด" value={formatInvoiceDate(invoice.dueDate)} />
@@ -516,43 +518,58 @@ function FuelTransportInvoiceDocument({
           </div>
         </header>
 
-        <section className="grid grid-cols-[minmax(0,1fr)_70mm] gap-3">
+        <section className="grid grid-cols-[minmax(0,1fr)_94mm] gap-3">
           <div className="grid grid-cols-2 gap-2">
-            <div className="border border-black p-2">
-              <p className="font-semibold">ลูกค้า / ผู้รับใบแจ้งหนี้</p>
-              <p className="mt-1 text-[13px] font-bold">{tenant.name}</p>
-              <div className="mt-1 space-y-0.5">
-                {tenantLines.length ? tenantLines.map((line) => <p key={line}>{line}</p>) : <p>-</p>}
-                {tenant.taxId ? <p>เลขประจำตัวผู้เสียภาษี {tenant.taxId}</p> : null}
+            <div className="border border-black">
+              <p className="border-b border-black bg-neutral-100 px-2 py-1 text-[10.5px] font-bold">
+                ลูกค้า / ผู้รับใบแจ้งหนี้
+              </p>
+              <div className="p-2">
+                <p className="text-[22px] font-bold leading-none">{tenant.name}</p>
+                <div className="mt-1 space-y-0.5">
+                  {tenantLines.length ? tenantLines.map((line) => <p key={line}>{line}</p>) : <p>-</p>}
+                  {tenant.taxId ? <p>เลขประจำตัวผู้เสียภาษี {tenant.taxId}</p> : null}
+                </div>
               </div>
             </div>
-            <div className="border border-black p-2">
-              <p className="font-semibold">ชำระเงิน</p>
-              <p className="mt-1">บัญชี {issuer.bankAccountNumber || "-"}</p>
-              <p>ชื่อบัญชี {issuer.bankAccountName || "-"}</p>
-              <p>ธนาคาร {issuer.bankName || "-"} {issuer.bankBranch || ""}</p>
-              <p>Line ID {issuer.paymentLineId || "-"}</p>
+            <div className="border border-black">
+              <p className="border-b border-black bg-neutral-100 px-2 py-1 text-[10.5px] font-bold">
+                ชำระเงิน
+              </p>
+              <div className="p-2 leading-tight">
+                <p className="text-[17px] font-bold">บัญชี {issuer.bankAccountNumber || "-"}</p>
+                <p className="mt-1 text-[13px] font-semibold">ชื่อบัญชี {issuer.bankAccountName || "-"}</p>
+                <p className="text-[13px]">ธนาคาร {issuer.bankName || "-"} {issuer.bankBranch || ""}</p>
+                <p className="text-[13px]">Line ID {issuer.paymentLineId || "-"}</p>
+              </div>
             </div>
           </div>
-          <div className="grid grid-cols-[1fr_24mm] gap-2 border border-black p-2">
-            <div>
-              <p className="text-[10px]">ยอดต้องจ่าย</p>
-              <p className="mt-1 text-[24px] font-bold leading-none">{formatMoney(invoice.total)}</p>
-              <p className="mt-1 text-[10px]">{thaiBahtText(invoice.total)}</p>
+          <div className="grid grid-cols-[1fr_21mm] border-2 border-black">
+            <div className="min-w-0 p-2.5">
+              <p className="text-[15px] font-bold leading-none">ยอดต้องจ่าย</p>
+              <p className="mt-2 text-[39px] font-bold leading-none tabular-nums">{formatMoney(invoice.total)}</p>
+              <p className="mt-2 text-[15px] leading-tight">{thaiBahtText(invoice.total)}</p>
             </div>
-            {qrImageUrl ? (
-              <img
-                src={qrImageUrl}
-                alt="PromptPay QR Code"
-                className="h-[23mm] w-[23mm] object-contain"
-              />
-            ) : null}
+            <div className="grid place-items-center border-l border-black bg-neutral-50 p-1.5 text-center">
+              {qrImageUrl ? (
+                <img
+                  src={qrImageUrl}
+                  alt=""
+                  className="h-[18mm] w-[18mm] border border-neutral-300 bg-white object-contain"
+                />
+              ) : (
+                <div className="grid h-[18mm] w-[18mm] place-items-center border border-neutral-300 bg-white text-[8px] font-bold">
+                  QR
+                </div>
+              )}
+              <p className="mt-1 text-[8px] font-semibold leading-none">PromptPay</p>
+            </div>
           </div>
         </section>
 
-        <section className="grid grid-cols-[104mm_minmax(0,1fr)] gap-3">
+        <section className="grid grid-cols-[128mm_minmax(0,1fr)] gap-3">
           <div className="grid content-start gap-2">
-            <table className="w-full table-fixed border-collapse text-[9.5px]">
+            <table className="w-full table-fixed border-collapse text-[10px]">
               <colgroup>
                 <col className="w-[33%]" />
                 <col className="w-[22%]" />
@@ -585,27 +602,31 @@ function FuelTransportInvoiceDocument({
                   </tr>
                 ))}
                 <tr>
-                  <FuelCell strong>{currentMonthLabel}</FuelCell>
-                  <FuelCell align="right">{formatNumber(litersTotal)}</FuelCell>
-                  <FuelCell align="right">{currentRate}</FuelCell>
-                  <FuelCell align="right" strong>{formatMoney(currentTotal)}</FuelCell>
+                  <FuelCell className="h-[6.5mm] bg-neutral-100 text-[15px]" strong>{currentMonthLabel}</FuelCell>
+                  <FuelCell className="h-[6.5mm] bg-neutral-100 text-[15px]" align="right">{formatNumber(litersTotal)}</FuelCell>
+                  <FuelCell className="h-[6.5mm] bg-neutral-100 text-[15px]" align="right">{currentRate}</FuelCell>
+                  <FuelCell className="h-[6.5mm] bg-neutral-100 text-[15px]" align="right" strong>{formatMoney(currentTotal)}</FuelCell>
                 </tr>
               </tbody>
             </table>
 
-            <div className="grid grid-cols-3 border border-black text-center">
+            <div className="grid grid-cols-[0.82fr_1.09fr_1.09fr] gap-1.5 text-center">
               <FuelTotalBox label="ยอดค้างเก่า" value={carryoverTotal} />
               <FuelTotalBox label="ยอดเดือนนี้" value={currentTotal} />
               <FuelTotalBox label="ยอดต้องจ่าย" value={invoice.total} strong />
             </div>
 
             <div className="grid grid-cols-[1fr_28mm] gap-2">
-              <div className="border border-black p-2">
-                <p className="font-semibold">หมายเหตุ</p>
-                <p className="mt-1">{invoice.notes || "-"}</p>
-                <p className="mt-1">
-                  ยอดค้างเก่า {includedCarryoverTotal > 0 ? "รวมในยอดต้องจ่าย" : "แสดงแยก"}
+              <div className="border border-black">
+                <p className="border-b border-black bg-neutral-100 px-2 py-1 text-[10.5px] font-bold">
+                  หมายเหตุ
                 </p>
+                <div className="p-2 text-[15px] leading-tight">
+                  <p>{invoice.notes || "-"}</p>
+                  <p className="mt-1">
+                    ยอดค้างเก่า {includedCarryoverTotal > 0 ? "รวมในยอดต้องจ่าย" : "แสดงแยก"}
+                  </p>
+                </div>
               </div>
               <div className="border border-black p-2 text-center">
                 <div className="mx-auto mt-7 h-8 w-24 border-b border-black" />
@@ -614,7 +635,7 @@ function FuelTransportInvoiceDocument({
             </div>
           </div>
 
-          <table className="w-full table-fixed border-collapse text-[8.5px]">
+          <table className="w-full table-fixed border-collapse text-[9px]">
             <colgroup>
               <col className="w-[8%]" />
               <col className="w-[16%]" />
@@ -684,7 +705,7 @@ function FuelHead({
 }) {
   return (
     <th
-      className={`border border-black px-1 py-1 font-bold ${
+      className={`border border-black bg-neutral-100 px-1 py-1 font-bold ${
         align === "right" ? "text-right" : "text-left"
       }`}
     >
@@ -696,10 +717,12 @@ function FuelHead({
 function FuelCell({
   children,
   align = "left",
+  className = "",
   strong,
 }: {
   children: ReactNode;
   align?: "left" | "right" | "center";
+  className?: string;
   strong?: boolean;
 }) {
   const alignment =
@@ -709,7 +732,7 @@ function FuelCell({
     <td
       className={`h-[4.5mm] border border-black px-1 py-0.5 align-middle ${
         strong ? "font-bold" : ""
-      } ${alignment}`}
+      } ${alignment} ${className}`}
     >
       {children}
     </td>
@@ -726,9 +749,9 @@ function FuelTotalBox({
   strong?: boolean;
 }) {
   return (
-    <div className={`border-r border-black p-2 last:border-r-0 ${strong ? "bg-black text-white print:bg-white print:text-black" : ""}`}>
-      <p className="text-[9px]">{label}</p>
-      <p className="mt-1 text-[16px] font-bold leading-none">{formatMoney(value)}</p>
+    <div className={`min-w-0 border border-black p-2 ${strong ? "border-2 bg-neutral-100" : "bg-white"}`}>
+      <p className="text-[13px] font-semibold leading-none">{label}</p>
+      <p className="mt-1 text-[24px] font-bold leading-none tabular-nums">{formatMoney(value)}</p>
     </div>
   );
 }
