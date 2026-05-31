@@ -7,6 +7,7 @@ import type {
   BillingCycle,
   DashboardData,
   Invoice,
+  IssuerProfile,
   Tenant,
 } from "@/lib/types";
 
@@ -121,6 +122,33 @@ function thaiBahtText(value: number) {
   return `${thaiNumberText(baht)}บาทถ้วน`;
 }
 
+function issuerForInvoice(data: DashboardData, invoice: Invoice): IssuerProfile {
+  const fallback = data.issuerProfiles.find((profile) => profile.isDefault) ??
+    data.issuerProfiles[0];
+
+  return (
+    data.issuerProfiles.find((profile) => profile.id === invoice.issuerProfileId) ??
+    fallback ?? {
+      ...data.organization,
+      active: true,
+      isDefault: true,
+    }
+  );
+}
+
+function formatCompactDate(value?: string) {
+  if (!value) return "-";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return new Intl.DateTimeFormat("th-TH", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
 export function InvoiceDocument({
   data,
   invoice,
@@ -134,6 +162,18 @@ export function InvoiceDocument({
   cycle?: BillingCycle;
   meterEvidence: InvoiceMeterEvidence[];
 }) {
+  if (invoice.type === "fuel_transport") {
+    return (
+      <FuelTransportInvoiceDocument
+        data={data}
+        invoice={invoice}
+        tenant={tenant}
+        cycle={cycle}
+      />
+    );
+  }
+
+  const issuer = issuerForInvoice(data, invoice);
   const lines = addressLines(tenant.billingAddress);
   const evidenceByReadingId = new Map(
     meterEvidence.map((item) => [item.id, item]),
@@ -166,28 +206,28 @@ export function InvoiceDocument({
   const blankRows = Array.from({
     length: Math.max(10 - invoiceRows.length, 0),
   });
-  const organizationLines = addressLines(data.organization.address);
+  const organizationLines = addressLines(issuer.address);
   const tenantLines = lines.length ? lines : ["-"];
-  const contactValue = [data.organization.phone, data.organization.email]
+  const contactValue = [issuer.phone, issuer.email]
     .filter(Boolean)
     .join(" / ");
   const paymentLines = [
-    data.organization.bankAccountNumber
-      ? `เลขที่บัญชี ${data.organization.bankAccountNumber}`
+    issuer.bankAccountNumber
+      ? `เลขที่บัญชี ${issuer.bankAccountNumber}`
       : "",
-    data.organization.bankAccountName
-      ? `ชื่อบัญชี ${data.organization.bankAccountName}`
+    issuer.bankAccountName
+      ? `ชื่อบัญชี ${issuer.bankAccountName}`
       : "",
-    data.organization.bankName
-      ? `ธนาคาร ${data.organization.bankName}`
+    issuer.bankName
+      ? `ธนาคาร ${issuer.bankName}`
       : "",
-    data.organization.bankBranch ? `สาขา ${data.organization.bankBranch}` : "",
-    data.organization.paymentLineId
-      ? `โอนแล้วโปรดแจ้ง Line ID: ${data.organization.paymentLineId}`
+    issuer.bankBranch ? `สาขา ${issuer.bankBranch}` : "",
+    issuer.paymentLineId
+      ? `โอนแล้วโปรดแจ้ง Line ID: ${issuer.paymentLineId}`
       : "",
   ].filter(Boolean);
 
-  const rawPpId = data.organization.promptpayId || data.organization.taxId || data.organization.phone || "";
+  const rawPpId = issuer.promptpayId || issuer.taxId || issuer.phone || "";
   const cleanPp = rawPpId.replace(/[^0-9]/g, "");
   const hasValidPromptPay = cleanPp.length === 10 || cleanPp.length === 13 || cleanPp.length === 15;
 
@@ -223,14 +263,14 @@ export function InvoiceDocument({
         <section className="mt-4 grid gap-3 print:mt-3 sm:grid-cols-2">
           <PartyBlock
             title="ผู้วางบิล"
-            name={data.organization.name}
+            name={issuer.name}
             lines={[
               ...organizationLines,
-              data.organization.taxId
-                ? `เลขประจำตัวผู้เสียภาษี ${data.organization.taxId}`
+              issuer.taxId
+                ? `เลขประจำตัวผู้เสียภาษี ${issuer.taxId}`
                 : "",
-              data.organization.phone ? `โทร. ${data.organization.phone}` : "",
-              data.organization.email ? `อีเมล ${data.organization.email}` : "",
+              issuer.phone ? `โทร. ${issuer.phone}` : "",
+              issuer.email ? `อีเมล ${issuer.email}` : "",
             ]}
           />
           <PartyBlock
@@ -394,6 +434,302 @@ export function InvoiceDocument({
         </section>
       </section>
     </article>
+  );
+}
+
+function FuelTransportInvoiceDocument({
+  data,
+  invoice,
+  tenant,
+  cycle,
+}: {
+  data: DashboardData;
+  invoice: Invoice;
+  tenant: Tenant;
+  cycle?: BillingCycle;
+}) {
+  const issuer = issuerForInvoice(data, invoice);
+  const issuerLines = addressLines(issuer.address);
+  const tenantLines = addressLines(tenant.billingAddress);
+  const sortedItems = [...invoice.items].sort((a, b) => {
+    const dateSort = (a.serviceDate ?? "").localeCompare(b.serviceDate ?? "");
+    if (dateSort) return dateSort;
+    return (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
+  });
+  const includedCarryoverTotal = invoice.carryovers
+    .filter((row) => row.includedInTotal)
+    .reduce((sum, row) => sum + row.amount, 0);
+  const carryoverTotal = invoice.carryovers.reduce(
+    (sum, row) => sum + row.amount,
+    0,
+  );
+  const currentTotal = Math.max(invoice.total - includedCarryoverTotal, 0);
+  const litersTotal = sortedItems.reduce((sum, item) => sum + item.quantity, 0);
+  const rates = Array.from(new Set(sortedItems.map((item) => item.unitPrice)));
+  const currentRate = rates.length === 1 ? formatUnitPrice(rates[0] ?? 0) : "-";
+  const currentMonthLabel = cycle?.label ?? formatInvoiceDate(invoice.issueDate);
+  const detailRows = sortedItems;
+  const detailBlankRows = Array.from({
+    length: Math.max(31 - detailRows.length, 0),
+  });
+  const carryoverBlankRows = Array.from({
+    length: Math.max(6 - invoice.carryovers.length, 0),
+  });
+  const rawPpId = issuer.promptpayId || issuer.taxId || issuer.phone || "";
+  const cleanPp = rawPpId.replace(/[^0-9]/g, "");
+  const hasValidPromptPay =
+    cleanPp.length === 10 || cleanPp.length === 13 || cleanPp.length === 15;
+  const qrPayload = hasValidPromptPay
+    ? generatePromptPayPayload(cleanPp, invoice.total)
+    : "";
+  const qrImageUrl = qrPayload
+    ? `https://chart.googleapis.com/chart?cht=qr&chs=180x180&chl=${encodeURIComponent(qrPayload)}`
+    : "";
+
+  return (
+    <article className="mx-auto w-full max-w-[297mm] bg-white p-3 text-[10px] leading-tight text-black print:max-w-none print:p-0">
+      <style>
+        {"@media print { @page { size: A4 landscape; margin: 5mm; } }"}
+      </style>
+      <section className="mx-auto grid min-h-[198mm] w-[286mm] max-w-full grid-rows-[auto_auto_1fr_auto] gap-2 border border-black bg-white p-4 print:min-h-[200mm] print:w-full print:gap-1.5 print:p-2">
+        <header className="grid grid-cols-[82mm_minmax(0,1fr)_64mm] gap-3 border-b-2 border-black pb-2">
+          <div>
+            <h1 className="text-[18px] font-bold leading-snug">{issuer.name}</h1>
+            <div className="mt-1 space-y-0.5">
+              {issuerLines.map((line) => (
+                <p key={line}>{line}</p>
+              ))}
+              {issuer.taxId ? <p>เลขประจำตัวผู้เสียภาษี {issuer.taxId}</p> : null}
+              <p>โทร {issuer.phone || "-"} {issuer.email ? `อีเมล ${issuer.email}` : ""}</p>
+            </div>
+          </div>
+          <div className="text-center">
+            <p className="text-[11px] font-semibold">เอกสารเรียกเก็บเงิน</p>
+            <h2 className="mt-1 text-[24px] font-bold">ใบแจ้งหนี้ค่าขนส่งน้ำมัน</h2>
+            <p className="mt-1 text-[13px] font-semibold">{currentMonthLabel}</p>
+          </div>
+          <div className="grid content-start gap-1 border border-black p-2 text-[10px]">
+            <DocMeta label="เลขที่เอกสาร" value={invoice.invoiceNo} />
+            <DocMeta label="วันที่ออก" value={formatInvoiceDate(invoice.issueDate)} />
+            <DocMeta label="ครบกำหนด" value={formatInvoiceDate(invoice.dueDate)} />
+            <DocMeta label="สถานะ" value={invoiceStatusText(invoice.status)} />
+          </div>
+        </header>
+
+        <section className="grid grid-cols-[minmax(0,1fr)_70mm] gap-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="border border-black p-2">
+              <p className="font-semibold">ลูกค้า / ผู้รับใบแจ้งหนี้</p>
+              <p className="mt-1 text-[13px] font-bold">{tenant.name}</p>
+              <div className="mt-1 space-y-0.5">
+                {tenantLines.length ? tenantLines.map((line) => <p key={line}>{line}</p>) : <p>-</p>}
+                {tenant.taxId ? <p>เลขประจำตัวผู้เสียภาษี {tenant.taxId}</p> : null}
+              </div>
+            </div>
+            <div className="border border-black p-2">
+              <p className="font-semibold">ชำระเงิน</p>
+              <p className="mt-1">บัญชี {issuer.bankAccountNumber || "-"}</p>
+              <p>ชื่อบัญชี {issuer.bankAccountName || "-"}</p>
+              <p>ธนาคาร {issuer.bankName || "-"} {issuer.bankBranch || ""}</p>
+              <p>Line ID {issuer.paymentLineId || "-"}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-[1fr_24mm] gap-2 border border-black p-2">
+            <div>
+              <p className="text-[10px]">ยอดต้องจ่าย</p>
+              <p className="mt-1 text-[24px] font-bold leading-none">{formatMoney(invoice.total)}</p>
+              <p className="mt-1 text-[10px]">{thaiBahtText(invoice.total)}</p>
+            </div>
+            {qrImageUrl ? (
+              <img
+                src={qrImageUrl}
+                alt="PromptPay QR Code"
+                className="h-[23mm] w-[23mm] object-contain"
+              />
+            ) : null}
+          </div>
+        </section>
+
+        <section className="grid grid-cols-[104mm_minmax(0,1fr)] gap-3">
+          <div className="grid content-start gap-2">
+            <table className="w-full table-fixed border-collapse text-[9.5px]">
+              <colgroup>
+                <col className="w-[33%]" />
+                <col className="w-[22%]" />
+                <col className="w-[18%]" />
+                <col className="w-[27%]" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <FuelHead>เดือน</FuelHead>
+                  <FuelHead align="right">ลิตร</FuelHead>
+                  <FuelHead align="right">บาท/ลิตร</FuelHead>
+                  <FuelHead align="right">รวมเป็นเงิน</FuelHead>
+                </tr>
+              </thead>
+              <tbody>
+                {invoice.carryovers.map((row) => (
+                  <tr key={row.id}>
+                    <FuelCell strong>{row.periodLabel || row.label}</FuelCell>
+                    <FuelCell align="right">{row.quantity ? formatNumber(row.quantity) : "-"}</FuelCell>
+                    <FuelCell align="right">{row.unitPrice ? formatUnitPrice(row.unitPrice) : "-"}</FuelCell>
+                    <FuelCell align="right" strong>{formatMoney(row.amount)}</FuelCell>
+                  </tr>
+                ))}
+                {carryoverBlankRows.map((_, index) => (
+                  <tr key={`carryover-blank-${index}`}>
+                    <FuelCell>&nbsp;</FuelCell>
+                    <FuelCell>&nbsp;</FuelCell>
+                    <FuelCell>&nbsp;</FuelCell>
+                    <FuelCell>&nbsp;</FuelCell>
+                  </tr>
+                ))}
+                <tr>
+                  <FuelCell strong>{currentMonthLabel}</FuelCell>
+                  <FuelCell align="right">{formatNumber(litersTotal)}</FuelCell>
+                  <FuelCell align="right">{currentRate}</FuelCell>
+                  <FuelCell align="right" strong>{formatMoney(currentTotal)}</FuelCell>
+                </tr>
+              </tbody>
+            </table>
+
+            <div className="grid grid-cols-3 border border-black text-center">
+              <FuelTotalBox label="ยอดค้างเก่า" value={carryoverTotal} />
+              <FuelTotalBox label="ยอดเดือนนี้" value={currentTotal} />
+              <FuelTotalBox label="ยอดต้องจ่าย" value={invoice.total} strong />
+            </div>
+
+            <div className="grid grid-cols-[1fr_28mm] gap-2">
+              <div className="border border-black p-2">
+                <p className="font-semibold">หมายเหตุ</p>
+                <p className="mt-1">{invoice.notes || "-"}</p>
+                <p className="mt-1">
+                  ยอดค้างเก่า {includedCarryoverTotal > 0 ? "รวมในยอดต้องจ่าย" : "แสดงแยก"}
+                </p>
+              </div>
+              <div className="border border-black p-2 text-center">
+                <div className="mx-auto mt-7 h-8 w-24 border-b border-black" />
+                <p className="mt-1 font-semibold">ผู้วางบิล</p>
+              </div>
+            </div>
+          </div>
+
+          <table className="w-full table-fixed border-collapse text-[8.5px]">
+            <colgroup>
+              <col className="w-[8%]" />
+              <col className="w-[16%]" />
+              <col className="w-[42%]" />
+              <col className="w-[13%]" />
+              <col className="w-[10%]" />
+              <col className="w-[11%]" />
+            </colgroup>
+            <thead>
+              <tr>
+                <FuelHead>ลำดับ</FuelHead>
+                <FuelHead>วันที่</FuelHead>
+                <FuelHead>รายการ</FuelHead>
+                <FuelHead align="right">ลิตร</FuelHead>
+                <FuelHead align="right">บาท/ลิตร</FuelHead>
+                <FuelHead align="right">เงิน</FuelHead>
+              </tr>
+            </thead>
+            <tbody>
+              {detailRows.map((item, index) => (
+                <tr key={item.id}>
+                  <FuelCell align="center">{index + 1}</FuelCell>
+                  <FuelCell>{formatCompactDate(item.serviceDate)}</FuelCell>
+                  <FuelCell>{item.tripLabel || item.description}</FuelCell>
+                  <FuelCell align="right">{formatNumber(item.quantity)}</FuelCell>
+                  <FuelCell align="right">{formatUnitPrice(item.unitPrice)}</FuelCell>
+                  <FuelCell align="right" strong>{formatMoney(item.amount)}</FuelCell>
+                </tr>
+              ))}
+              {detailBlankRows.map((_, index) => (
+                <tr key={`detail-blank-${index}`}>
+                  <FuelCell align="center">{detailRows.length + index + 1}</FuelCell>
+                  <FuelCell>&nbsp;</FuelCell>
+                  <FuelCell>&nbsp;</FuelCell>
+                  <FuelCell>&nbsp;</FuelCell>
+                  <FuelCell>&nbsp;</FuelCell>
+                  <FuelCell>&nbsp;</FuelCell>
+                </tr>
+              ))}
+              <tr>
+                <FuelCell>&nbsp;</FuelCell>
+                <FuelCell>&nbsp;</FuelCell>
+                <FuelCell strong>รวมเดือนนี้</FuelCell>
+                <FuelCell align="right" strong>{formatNumber(litersTotal)}</FuelCell>
+                <FuelCell>&nbsp;</FuelCell>
+                <FuelCell align="right" strong>{formatMoney(invoice.subtotal)}</FuelCell>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <footer className="grid grid-cols-[minmax(0,1fr)_44mm] gap-3 text-[9px]">
+          <p>กรุณาระบุเลขที่เอกสาร {invoice.invoiceNo} เมื่อชำระเงิน</p>
+          <p className="text-right">วันที่พิมพ์ {formatCompactDate(new Date().toISOString())}</p>
+        </footer>
+      </section>
+    </article>
+  );
+}
+
+function FuelHead({
+  children,
+  align = "left",
+}: {
+  children: ReactNode;
+  align?: "left" | "right";
+}) {
+  return (
+    <th
+      className={`border border-black px-1 py-1 font-bold ${
+        align === "right" ? "text-right" : "text-left"
+      }`}
+    >
+      {children}
+    </th>
+  );
+}
+
+function FuelCell({
+  children,
+  align = "left",
+  strong,
+}: {
+  children: ReactNode;
+  align?: "left" | "right" | "center";
+  strong?: boolean;
+}) {
+  const alignment =
+    align === "right" ? "text-right" : align === "center" ? "text-center" : "";
+
+  return (
+    <td
+      className={`h-[4.5mm] border border-black px-1 py-0.5 align-middle ${
+        strong ? "font-bold" : ""
+      } ${alignment}`}
+    >
+      {children}
+    </td>
+  );
+}
+
+function FuelTotalBox({
+  label,
+  value,
+  strong,
+}: {
+  label: string;
+  value: number;
+  strong?: boolean;
+}) {
+  return (
+    <div className={`border-r border-black p-2 last:border-r-0 ${strong ? "bg-black text-white print:bg-white print:text-black" : ""}`}>
+      <p className="text-[9px]">{label}</p>
+      <p className="mt-1 text-[16px] font-bold leading-none">{formatMoney(value)}</p>
+    </div>
   );
 }
 

@@ -8,6 +8,7 @@ import type {
   DashboardData,
   BillingCycle,
   Invoice,
+  InvoiceCarryover,
   InvoiceItem,
   InvoiceType,
   Payment,
@@ -99,6 +100,28 @@ export type FuelTripPayloadItem = {
   label: string;
   quantity: number;
   unitPrice: number;
+};
+
+export type FuelCarryoverFormRow = {
+  id: string;
+  sourceInvoiceId?: string;
+  sourceInvoiceNo?: string;
+  label: string;
+  periodLabel: string;
+  quantity: string;
+  unitPrice: string;
+  amount: string;
+};
+
+export type FuelCarryoverPayloadItem = {
+  sourceInvoiceId?: string;
+  sourceInvoiceNo?: string;
+  label: string;
+  periodLabel: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+  includedInTotal: boolean;
 };
 
 export type InvoiceEditFormRow = {
@@ -197,23 +220,74 @@ export function createFuelTripRow(defaultDate: string, index: number): FuelTripF
     id: createId("fuel-trip"),
     date: defaultDate,
     label: `รอบวิ่ง ${index + 1}`,
-    quantity: "1",
-    unitPrice: "0",
+    quantity: "",
+    unitPrice: "0.21",
   };
 }
 
 export function normalizeFuelTripRows(rows: FuelTripFormRow[]): FuelTripPayloadItem[] {
+  return rows
+    .map((row, index) => {
+      const quantity = Math.max(Math.round(Number(row.quantity) || 0), 0);
+      const unitPrice = Number(String(row.unitPrice).replace(/,/g, "")) || 0;
+
+      return {
+        date: row.date,
+        label: row.label.trim() || `รอบวิ่ง ${index + 1}`,
+        quantity,
+        unitPrice,
+      };
+    })
+    .sort((a, b) => {
+      const dateSort = a.date.localeCompare(b.date);
+      if (dateSort) return dateSort;
+      return a.label.localeCompare(b.label, "th");
+    });
+}
+
+export function createFuelCarryoverRow(
+  index: number,
+  input?: Partial<FuelCarryoverFormRow>,
+): FuelCarryoverFormRow {
+  const quantity = Number(String(input?.quantity ?? "0").replace(/,/g, "")) || 0;
+  const unitPrice = Number(String(input?.unitPrice ?? "0").replace(/,/g, "")) || 0;
+  const amount =
+    Number(String(input?.amount ?? "").replace(/,/g, "")) ||
+    quantity * unitPrice;
+
+  return {
+    id: createId("fuel-carryover"),
+    sourceInvoiceId: input?.sourceInvoiceId,
+    sourceInvoiceNo: input?.sourceInvoiceNo,
+    label: input?.label?.trim() || `ยอดค้าง ${index + 1}`,
+    periodLabel: input?.periodLabel?.trim() || "",
+    quantity: input?.quantity ?? "",
+    unitPrice: input?.unitPrice ?? "",
+    amount: amount ? String(amount) : "",
+  };
+}
+
+export function normalizeFuelCarryoverRows(
+  rows: FuelCarryoverFormRow[],
+  includedInTotal: boolean,
+): FuelCarryoverPayloadItem[] {
   return rows.map((row, index) => {
-    const quantity = Math.max(Math.round(Number(row.quantity) || 1), 1);
+    const quantity = Math.max(Math.round(Number(row.quantity) || 0), 0);
     const unitPrice = Number(String(row.unitPrice).replace(/,/g, "")) || 0;
+    const typedAmount = Number(String(row.amount).replace(/,/g, "")) || 0;
+    const amount = typedAmount || quantity * unitPrice;
 
     return {
-      date: row.date,
-      label: row.label.trim() || `รอบวิ่ง ${index + 1}`,
+      sourceInvoiceId: row.sourceInvoiceId,
+      sourceInvoiceNo: row.sourceInvoiceNo,
+      label: row.label.trim() || `ยอดค้าง ${index + 1}`,
+      periodLabel: row.periodLabel.trim(),
       quantity,
       unitPrice,
+      amount,
+      includedInTotal,
     };
-  });
+  }).filter((row) => row.amount > 0);
 }
 
 export function createInvoiceEditRow(item?: InvoiceItem): InvoiceEditFormRow {
@@ -291,8 +365,13 @@ export function fuelTripItemsFromJson(value: string): InvoiceItem[] {
     if (!Array.isArray(rows)) return [];
 
     return rows
+      .sort((a, b) => {
+        const dateSort = a.date.localeCompare(b.date);
+        if (dateSort) return dateSort;
+        return a.label.localeCompare(b.label, "th");
+      })
       .map((row, index): InvoiceItem => {
-        const quantity = Math.max(Math.round(Number(row.quantity) || 1), 1);
+        const quantity = Math.max(Math.round(Number(row.quantity) || 0), 0);
         const unitPrice = Number(row.unitPrice) || 0;
         const tripLabel = row.label?.trim() || `รอบวิ่ง ${index + 1}`;
         const tripDate = row.date ? formatBillingDate(row.date) : "";
@@ -306,9 +385,44 @@ export function fuelTripItemsFromJson(value: string): InvoiceItem[] {
           quantity,
           unitPrice,
           amount: quantity * unitPrice,
+          serviceDate: row.date ? new Date(`${row.date}T00:00:00`).toISOString() : undefined,
+          tripLabel,
+          displayOrder: index,
         };
       })
-      .filter((item) => item.unitPrice > 0);
+      .filter((item) => item.quantity > 0 && item.unitPrice > 0);
+  } catch {
+    return [];
+  }
+}
+
+export function fuelCarryoversFromJson(value: string): InvoiceCarryover[] {
+  if (!value) return [];
+
+  try {
+    const rows = JSON.parse(value) as FuelCarryoverPayloadItem[];
+
+    if (!Array.isArray(rows)) return [];
+
+    return rows
+      .map((row, index): InvoiceCarryover | null => {
+        const amount = Number(row.amount) || Number(row.quantity) * Number(row.unitPrice);
+        if (amount <= 0) return null;
+
+        return {
+          id: createId("carryover"),
+          sourceInvoiceId: row.sourceInvoiceId,
+          sourceInvoiceNo: row.sourceInvoiceNo,
+          label: row.label?.trim() || `ยอดค้าง ${index + 1}`,
+          periodLabel: row.periodLabel?.trim() || "",
+          quantity: Math.max(Math.round(Number(row.quantity) || 0), 0),
+          unitPrice: Number(row.unitPrice) || 0,
+          amount,
+          includedInTotal: Boolean(row.includedInTotal),
+          displayOrder: index,
+        };
+      })
+      .filter((row): row is InvoiceCarryover => Boolean(row));
   } catch {
     return [];
   }

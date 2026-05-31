@@ -4,8 +4,10 @@ import {
   appUsers,
   billingCycles,
   invoiceAuditLogs,
+  invoiceCarryovers,
   invoiceItems,
   invoices,
+  issuerProfiles,
   meterReadings,
   organizations,
   paymentEvents,
@@ -22,8 +24,10 @@ import { hashPortalToken } from "@/lib/portal";
 import type {
   DashboardData,
   InvoiceAuditLog,
+  InvoiceCarryover,
   Invoice,
   InvoiceItem,
+  IssuerProfile,
   MeterReading,
   Payment,
   PaymentEvent,
@@ -211,12 +215,14 @@ export async function getDashboardData(): Promise<DashboardData> {
 
   const [
     userRows,
+    issuerProfileRows,
     tenantRows,
     unitRows,
     cycleRows,
     readingRows,
     invoiceRows,
     itemRows,
+    carryoverRows,
     paymentRows,
     portalLinkRows,
     sessionRows,
@@ -228,6 +234,11 @@ export async function getDashboardData(): Promise<DashboardData> {
       .from(appUsers)
       .where(eq(appUsers.organizationId, organization.id))
       .orderBy(asc(appUsers.createdAt)),
+    db
+      .select()
+      .from(issuerProfiles)
+      .where(eq(issuerProfiles.organizationId, organization.id))
+      .orderBy(asc(issuerProfiles.createdAt)),
     db
       .select()
       .from(tenants)
@@ -254,6 +265,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       .where(eq(invoices.organizationId, organization.id))
       .orderBy(asc(invoices.issueDate)),
     db.select().from(invoiceItems),
+    db.select().from(invoiceCarryovers),
     db
       .select()
       .from(payments)
@@ -280,6 +292,49 @@ export async function getDashboardData(): Promise<DashboardData> {
       .where(eq(invoiceAuditLogs.organizationId, organization.id))
       .orderBy(asc(invoiceAuditLogs.createdAt)),
   ]);
+
+  const organizationData = {
+    id: organization.id,
+    name: organization.name,
+    taxId: organization.taxId,
+    address: organization.address,
+    phone: organization.phone,
+    email: organization.email,
+    bankAccountName: organization.bankAccountName,
+    bankAccountNumber: organization.bankAccountNumber,
+    bankName: organization.bankName,
+    bankBranch: organization.bankBranch,
+    paymentLineId: organization.paymentLineId,
+    promptpayId: organization.promptpayId,
+    vatRate: organization.vatRateBasisPoints / 100,
+    vatEnabledDefault: organization.vatEnabledDefault,
+  };
+  const issuerProfilesData: IssuerProfile[] = issuerProfileRows.length
+    ? issuerProfileRows.map((profile) => ({
+        id: profile.id,
+        name: profile.name,
+        taxId: profile.taxId,
+        address: profile.address,
+        phone: profile.phone,
+        email: profile.email,
+        bankAccountName: profile.bankAccountName,
+        bankAccountNumber: profile.bankAccountNumber,
+        bankName: profile.bankName,
+        bankBranch: profile.bankBranch,
+        paymentLineId: profile.paymentLineId,
+        promptpayId: profile.promptpayId,
+        vatRate: profile.vatRateBasisPoints / 100,
+        vatEnabledDefault: profile.vatEnabledDefault,
+        active: profile.active,
+        isDefault: profile.isDefault,
+      }))
+    : [
+        {
+          ...organizationData,
+          active: true,
+          isDefault: true,
+        },
+      ];
 
   const tenantsData: Tenant[] = tenantRows.map((tenant) => ({
     id: tenant.id,
@@ -339,6 +394,9 @@ export async function getDashboardData(): Promise<DashboardData> {
         unitPrice: fromSatang(item.unitPriceSatang),
         amount: fromSatang(item.amountSatang),
         meterReadingId: item.meterReadingId ?? undefined,
+        serviceDate: item.serviceDate ? iso(item.serviceDate) : undefined,
+        tripLabel: item.tripLabel || undefined,
+        displayOrder: item.displayOrder,
       });
       acc[item.invoiceId] = invoiceItemsForRow;
       return acc;
@@ -346,10 +404,48 @@ export async function getDashboardData(): Promise<DashboardData> {
     {},
   );
 
+  for (const list of Object.values(itemsByInvoice)) {
+    list.sort((a, b) => {
+      const order = (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
+      if (order) return order;
+      return (
+        new Date(a.serviceDate ?? "").getTime() -
+        new Date(b.serviceDate ?? "").getTime()
+      );
+    });
+  }
+
+  const carryoversByInvoice = carryoverRows.reduce<Record<string, InvoiceCarryover[]>>(
+    (acc, item) => {
+      const rows = acc[item.invoiceId] ?? [];
+      rows.push({
+        id: item.id,
+        invoiceId: item.invoiceId,
+        sourceInvoiceId: item.sourceInvoiceId ?? undefined,
+        sourceInvoiceNo: item.sourceInvoiceNo || undefined,
+        label: item.label,
+        periodLabel: item.periodLabel,
+        quantity: item.quantity,
+        unitPrice: fromSatang(item.unitPriceSatang),
+        amount: fromSatang(item.amountSatang),
+        includedInTotal: item.includedInTotal,
+        displayOrder: item.displayOrder,
+      });
+      acc[item.invoiceId] = rows;
+      return acc;
+    },
+    {},
+  );
+
+  for (const list of Object.values(carryoversByInvoice)) {
+    list.sort((a, b) => a.displayOrder - b.displayOrder);
+  }
+
   const invoicesData: Invoice[] = invoiceRows.map((invoice) => ({
     id: invoice.id,
     tenantId: invoice.tenantId,
     cycleId: invoice.billingCycleId,
+    issuerProfileId: invoice.issuerProfileId ?? undefined,
     invoiceNo: invoice.invoiceNo,
     type: invoice.type,
     issueDate: iso(invoice.issueDate),
@@ -365,6 +461,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     balance: fromSatang(invoice.balanceSatang),
     status: invoice.status,
     notes: invoice.notes,
+    carryovers: carryoversByInvoice[invoice.id] ?? [],
   }));
 
   const paymentsData: Payment[] = paymentRows.map((payment) => ({
@@ -431,22 +528,8 @@ export async function getDashboardData(): Promise<DashboardData> {
   }));
 
   return withRuntimeFlags({
-    organization: {
-      id: organization.id,
-      name: organization.name,
-      taxId: organization.taxId,
-      address: organization.address,
-      phone: organization.phone,
-      email: organization.email,
-      bankAccountName: organization.bankAccountName,
-      bankAccountNumber: organization.bankAccountNumber,
-      bankName: organization.bankName,
-      bankBranch: organization.bankBranch,
-      paymentLineId: organization.paymentLineId,
-      promptpayId: organization.promptpayId,
-      vatRate: organization.vatRateBasisPoints / 100,
-      vatEnabledDefault: organization.vatEnabledDefault,
-    },
+    organization: organizationData,
+    issuerProfiles: issuerProfilesData,
     users: userRows.map((user) => ({
       id: user.id,
       name: user.name,

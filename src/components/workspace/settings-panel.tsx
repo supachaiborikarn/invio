@@ -29,19 +29,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { DashboardData, RentalUnit } from "@/lib/types";
+import type { DashboardData, IssuerProfile, RentalUnit } from "@/lib/types";
 import { formatCurrency } from "@/lib/billing";
 import { Info, Field, getTenant } from "./utils";
 
 export function SettingsPanel({
   data,
   onOrganizationSubmit,
+  onIssuerProfileSubmit,
   onRoleSubmit,
   onUnitSubmit,
   onCreateUnit,
 }: {
   data: DashboardData;
   onOrganizationSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onIssuerProfileSubmit: (event: FormEvent<HTMLFormElement>) => Promise<boolean>;
   onRoleSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onUnitSubmit: (event: FormEvent<HTMLFormElement>) => Promise<boolean>;
   onCreateUnit: (event: FormEvent<HTMLFormElement>) => Promise<boolean>;
@@ -121,6 +123,42 @@ export function SettingsPanel({
           </form>
         </CardContent>
       </Card>
+
+      <Card className="rounded-md border border-border shadow-xs">
+        <CardHeader>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <CardTitle className="text-base font-semibold">หัวเอกสาร หจก.</CardTitle>
+              <CardDescription className="text-xs">เลือกใช้ตอนออกใบแจ้งหนี้และตอนพิมพ์</CardDescription>
+            </div>
+            <IssuerProfileButton onSubmit={onIssuerProfileSubmit} />
+          </div>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          {data.issuerProfiles.map((profile) => (
+            <div
+              key={profile.id}
+              className="grid gap-3 rounded-md border border-border/80 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+            >
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold text-sm">{profile.name}</p>
+                  {profile.isDefault ? <Badge variant="secondary">ค่าเริ่มต้น</Badge> : null}
+                  {!profile.active ? <Badge variant="outline">ปิดใช้งาน</Badge> : null}
+                </div>
+                <p className="mt-1 truncate text-xs text-muted-foreground">
+                  {profile.bankName || "-"} {profile.bankAccountNumber || ""} · พร้อมเพย์ {profile.promptpayId || "-"}
+                </p>
+              </div>
+              <IssuerProfileButton
+                profile={profile}
+                onSubmit={onIssuerProfileSubmit}
+                label="แก้ไข"
+              />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
       
       <Card className="rounded-md border border-border shadow-xs">
         <CardHeader>
@@ -195,6 +233,113 @@ export function SettingsPanel({
         </CardContent>
       </Card>
     </section>
+  );
+}
+
+function IssuerProfileButton({
+  profile,
+  onSubmit,
+  label = "เพิ่มหัว",
+}: {
+  profile?: IssuerProfile;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<boolean>;
+  label?: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    const ok = await onSubmit(event);
+    if (ok) setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          type="button"
+          variant={profile ? "outline" : "default"}
+          size="sm"
+          onClick={() => setOpen(true)}
+        >
+          {profile ? <Building2 className="size-4" /> : <Plus className="size-4" />}
+          {label}
+        </Button>
+      </DialogTrigger>
+      <IssuerProfileDialog profile={profile} onSubmit={handleSubmit} />
+    </Dialog>
+  );
+}
+
+function IssuerProfileDialog({
+  profile,
+  onSubmit,
+}: {
+  profile?: IssuerProfile;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogHeader>
+        <DialogTitle>{profile ? "แก้ไขหัวเอกสาร" : "เพิ่มหัวเอกสาร"}</DialogTitle>
+        <DialogDescription>ข้อมูลชุดนี้จะไปอยู่บนใบแจ้งหนี้และ QR พร้อมเพย์</DialogDescription>
+      </DialogHeader>
+      <form onSubmit={onSubmit} className="grid gap-4">
+        {profile ? <input type="hidden" name="issuerProfileId" value={profile.id} /> : null}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="ชื่อ หจก." name="name" defaultValue={profile?.name} />
+          <Field label="เลขประจำตัวผู้เสียภาษี" name="taxId" defaultValue={profile?.taxId} required={false} />
+          <Field label="เบอร์โทรศัพท์" name="phone" defaultValue={profile?.phone} required={false} />
+          <Field label="อีเมลติดต่อ" name="email" type="email" defaultValue={profile?.email} required={false} />
+          <Field label="ชื่อบัญชีธนาคาร" name="bankAccountName" defaultValue={profile?.bankAccountName} required={false} />
+          <Field label="เลขที่บัญชี" name="bankAccountNumber" defaultValue={profile?.bankAccountNumber} required={false} />
+          <Field label="ธนาคาร" name="bankName" defaultValue={profile?.bankName} required={false} />
+          <Field label="สาขา" name="bankBranch" defaultValue={profile?.bankBranch} required={false} />
+          <Field label="Line ID" name="paymentLineId" defaultValue={profile?.paymentLineId} required={false} />
+          <Field label="พร้อมเพย์" name="promptpayId" defaultValue={profile?.promptpayId} required={false} />
+          <Field label="VAT (%)" name="vatRate" type="number" step="0.01" defaultValue={String(profile?.vatRate ?? 7)} />
+          <div className="grid gap-2">
+            <Label>คิด VAT เป็นค่าเริ่มต้น</Label>
+            <Select name="vatEnabledDefault" defaultValue={profile?.vatEnabledDefault ?? true ? "yes" : "no"}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="yes">คิด VAT</SelectItem>
+                <SelectItem value="no">ไม่คิด VAT</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label>สถานะ</Label>
+            <Select name="active" defaultValue={profile?.active ?? true ? "yes" : "no"}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="yes">ใช้งาน</SelectItem>
+                <SelectItem value="no">ปิดใช้งาน</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label>ค่าเริ่มต้น</Label>
+            <Select name="isDefault" defaultValue={profile?.isDefault ? "yes" : "no"}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="yes">ตั้งเป็นค่าเริ่มต้น</SelectItem>
+                <SelectItem value="no">ไม่ใช่ค่าเริ่มต้น</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor={`issuerAddress-${profile?.id ?? "new"}`}>ที่อยู่บนเอกสาร</Label>
+          <Textarea
+            id={`issuerAddress-${profile?.id ?? "new"}`}
+            name="address"
+            defaultValue={profile?.address}
+            rows={3}
+          />
+        </div>
+        <Button type="submit" className="w-full">บันทึกหัวเอกสาร</Button>
+      </form>
+    </DialogContent>
   );
 }
 

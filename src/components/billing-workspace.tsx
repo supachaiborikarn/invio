@@ -23,6 +23,7 @@ import {
   importSampleTenantsAction,
   recordMeterReadingAction,
   recordPaymentAction,
+  saveIssuerProfileAction,
   sendInvoiceReminderEmailAction,
   updateBillingCycleStatusAction,
   createTenantPortalLinkAction,
@@ -69,6 +70,7 @@ import type {
   Invoice,
   InvoiceItem,
   InvoiceType,
+  IssuerProfile,
   MeterReading,
   Payment,
   RentalUnit,
@@ -92,6 +94,7 @@ import {
   createId,
   field,
   amountField,
+  fuelCarryoversFromJson,
   fuelTripItemsFromJson,
   invoiceEditItemsFromJson,
   today,
@@ -148,6 +151,10 @@ export function BillingWorkspace({
     data.cycles.find((cycle) => cycle.id === selectedCycleId) ??
     data.cycles.find((cycle) => cycle.id === defaultCycleId) ??
     null;
+  const defaultIssuerProfile =
+    data.issuerProfiles.find((profile) => profile.isDefault && profile.active) ??
+    data.issuerProfiles.find((profile) => profile.active) ??
+    data.issuerProfiles[0];
   const tabTriggerClass = "h-8 min-w-0 px-2 text-xs sm:text-sm";
 
   const selectTab = (tab: WorkspaceTab) => {
@@ -362,6 +369,13 @@ export function BillingWorkspace({
       invoiceType === "fuel_transport"
         ? fuelTripItemsFromJson(field(form, "itemsJson"))
         : [];
+    const carryovers =
+      invoiceType === "fuel_transport"
+        ? fuelCarryoversFromJson(field(form, "carryoversJson"))
+        : [];
+    const includedCarryoverTotal = carryovers
+      .filter((item) => item.includedInTotal)
+      .reduce((sum, item) => sum + item.amount, 0);
 
     if (
       !tenantId ||
@@ -389,10 +403,16 @@ export function BillingWorkspace({
       vatEnabled: field(form, "vatEnabled") === "yes",
       vatRate: data.organization.vatRate,
     });
+    const totalsWithCarryover = {
+      ...totalsForInvoice,
+      total: totalsForInvoice.total + includedCarryoverTotal,
+      balance: totalsForInvoice.balance + includedCarryoverTotal,
+    };
     const invoice: Invoice = {
       id: createId("invoice"),
       tenantId,
       cycleId: activeCycle.id,
+      issuerProfileId: field(form, "issuerProfileId") || defaultIssuerProfile?.id,
       invoiceNo: nextRunningNo("INV-256905", data.invoices.length),
       type: invoiceType,
       issueDate: today(),
@@ -406,7 +426,8 @@ export function BillingWorkspace({
           : tenant
             ? `ผู้เช่า ${tenant.name}`
             : "",
-      ...totalsForInvoice,
+      ...totalsWithCarryover,
+      carryovers,
     };
 
     setData((current) => ({
@@ -1018,6 +1039,7 @@ export function BillingWorkspace({
           id: createId("invoice"),
           tenantId: tenant.id,
           cycleId: cycle.id,
+          issuerProfileId: defaultIssuerProfile?.id,
           invoiceNo: nextRunningNo(
             prefix,
             current.invoices.length + newInvoices.length,
@@ -1029,6 +1051,7 @@ export function BillingWorkspace({
           vatEnabled: tenant.vatEnabled,
           status: "issued",
           ...totalsForInvoice,
+          carryovers: [],
         });
         existingTenantIds.add(tenant.id);
         createdCount += 1;
@@ -1066,6 +1089,7 @@ export function BillingWorkspace({
           bankName: field(form, "bankName"),
           bankBranch: field(form, "bankBranch"),
           paymentLineId: field(form, "paymentLineId"),
+          promptpayId: field(form, "promptpayId"),
           vatRate: amountField(form, "vatRate"),
           vatEnabledDefault: field(form, "vatEnabledDefault") === "yes",
         },
@@ -1080,6 +1104,64 @@ export function BillingWorkspace({
     );
     setActionMessage(result.message);
     if (result.ok) router.refresh();
+  }
+
+  async function handleIssuerProfileSubmit(event: FormEvent<HTMLFormElement>): Promise<boolean> {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const issuerProfileId = field(form, "issuerProfileId");
+    const isDefault = field(form, "isDefault") === "yes";
+    const profile: IssuerProfile = {
+      id: issuerProfileId || createId("issuer"),
+      name: field(form, "name"),
+      taxId: field(form, "taxId"),
+      address: field(form, "address"),
+      phone: field(form, "phone"),
+      email: field(form, "email"),
+      bankAccountName: field(form, "bankAccountName"),
+      bankAccountNumber: field(form, "bankAccountNumber"),
+      bankName: field(form, "bankName"),
+      bankBranch: field(form, "bankBranch"),
+      paymentLineId: field(form, "paymentLineId"),
+      promptpayId: field(form, "promptpayId"),
+      vatRate: amountField(form, "vatRate"),
+      vatEnabledDefault: field(form, "vatEnabledDefault") === "yes",
+      active: field(form, "active") === "yes",
+      isDefault,
+    };
+
+    if (!profile.name) return false;
+
+    if (!data.databaseConfigured) {
+      setData((current) => {
+        const exists = current.issuerProfiles.some((item) => item.id === profile.id);
+        const nextProfiles = exists
+          ? current.issuerProfiles.map((item) =>
+              item.id === profile.id ? profile : item,
+            )
+          : [...current.issuerProfiles, profile];
+
+        return {
+          ...current,
+          issuerProfiles: nextProfiles.map((item, index) => ({
+            ...item,
+            isDefault: profile.isDefault
+              ? item.id === profile.id
+              : item.isDefault || (!nextProfiles.some((next) => next.isDefault) && index === 0),
+          })),
+        };
+      });
+      setActionMessage("บันทึกหัวเอกสารแล้ว");
+      return true;
+    }
+
+    const result = await saveIssuerProfileAction(
+      { ok: false, message: "" },
+      new FormData(form),
+    );
+    setActionMessage(result.message);
+    if (result.ok) router.refresh();
+    return result.ok;
   }
 
   async function handleRoleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -1517,6 +1599,7 @@ export function BillingWorkspace({
               <SettingsPanel
                 data={data}
                 onOrganizationSubmit={handleOrganizationSubmit}
+                onIssuerProfileSubmit={handleIssuerProfileSubmit}
                 onRoleSubmit={handleRoleSubmit}
                 onUnitSubmit={handleUnitUpdate}
                 onCreateUnit={handleUnitCreate}
@@ -1554,6 +1637,7 @@ function createElectricInvoice(
     id: createId("invoice"),
     tenantId: unit.tenantId,
     cycleId: reading.cycleId,
+    issuerProfileId: data.issuerProfiles.find((profile) => profile.isDefault)?.id,
     invoiceNo: nextRunningNo("INV-256905", data.invoices.length),
     type: "electricity",
     issueDate: today(),
@@ -1563,6 +1647,7 @@ function createElectricInvoice(
     status: "issued",
     notes: reading.warning,
     ...totals,
+    carryovers: [],
   };
 }
 

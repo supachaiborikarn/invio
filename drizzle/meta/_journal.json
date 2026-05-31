@@ -43,6 +43,13 @@
       "when": 1779962378651,
       "tag": "0005_groovy_preak",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780238813449,
+      "tag": "0006_flaky_snowbird",
+      "breakpoints": true
     }
   ]
 }

@@ -89,6 +89,43 @@ export const organizations = pgTable("organizations", {
     .defaultNow(),
 });
 
+export const issuerProfiles = pgTable(
+  "issuer_profiles",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    taxId: text("tax_id").notNull().default(""),
+    address: text("address").notNull().default(""),
+    phone: text("phone").notNull().default(""),
+    email: text("email").notNull().default(""),
+    bankAccountName: text("bank_account_name").notNull().default(""),
+    bankAccountNumber: text("bank_account_number").notNull().default(""),
+    bankName: text("bank_name").notNull().default(""),
+    bankBranch: text("bank_branch").notNull().default(""),
+    paymentLineId: text("payment_line_id").notNull().default(""),
+    promptpayId: text("promptpay_id").notNull().default(""),
+    vatRateBasisPoints: integer("vat_rate_basis_points").notNull().default(700),
+    vatEnabledDefault: boolean("vat_enabled_default").notNull().default(true),
+    active: boolean("active").notNull().default(true),
+    isDefault: boolean("is_default").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    issuerNameUnique: uniqueIndex("issuer_profiles_org_name_unique").on(
+      table.organizationId,
+      table.name,
+    ),
+  }),
+);
+
 export const appUsers = pgTable(
   "app_users",
   {
@@ -287,6 +324,10 @@ export const invoices = pgTable(
     billingCycleId: uuid("billing_cycle_id")
       .notNull()
       .references(() => billingCycles.id, { onDelete: "restrict" }),
+    issuerProfileId: uuid("issuer_profile_id").references(
+      () => issuerProfiles.id,
+      { onDelete: "set null" },
+    ),
     invoiceNo: text("invoice_no").notNull(),
     type: invoiceTypeEnum("type").notNull().default("mixed"),
     issueDate: timestamp("issue_date", { withTimezone: true }).notNull(),
@@ -329,6 +370,27 @@ export const invoiceItems = pgTable("invoice_items", {
   quantity: integer("quantity").notNull().default(1),
   unitPriceSatang: integer("unit_price_satang").notNull().default(0),
   amountSatang: integer("amount_satang").notNull().default(0),
+  serviceDate: timestamp("service_date", { withTimezone: true }),
+  tripLabel: text("trip_label").notNull().default(""),
+  displayOrder: integer("display_order").notNull().default(0),
+});
+
+export const invoiceCarryovers = pgTable("invoice_carryovers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  invoiceId: uuid("invoice_id")
+    .notNull()
+    .references(() => invoices.id, { onDelete: "cascade" }),
+  sourceInvoiceId: uuid("source_invoice_id").references(() => invoices.id, {
+    onDelete: "set null",
+  }),
+  sourceInvoiceNo: text("source_invoice_no").notNull().default(""),
+  label: text("label").notNull().default(""),
+  periodLabel: text("period_label").notNull().default(""),
+  quantity: integer("quantity").notNull().default(0),
+  unitPriceSatang: integer("unit_price_satang").notNull().default(0),
+  amountSatang: integer("amount_satang").notNull().default(0),
+  includedInTotal: boolean("included_in_total").notNull().default(false),
+  displayOrder: integer("display_order").notNull().default(0),
 });
 
 export const payments = pgTable(

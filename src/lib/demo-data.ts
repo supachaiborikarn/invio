@@ -6,11 +6,14 @@ import type {
   BillingCycle,
   DashboardData,
   Invoice,
+  InvoiceCarryover,
   InvoiceItem,
+  IssuerProfile,
   MeterReading,
 } from "@/lib/types";
 
 const tenantId = "tenant-spx";
+const fuelTenantId = "tenant-taifah";
 const unitId = "unit-spx-shopee";
 
 const billingRows = [
@@ -128,7 +131,26 @@ const previousReadingMarkers = billingRows.map((row): MeterReading => ({
 
 const meterReadings: MeterReading[] = [...previousReadingMarkers, ...readings];
 
-const invoices: Invoice[] = billingRows.map((row) => {
+const demoIssuerProfile: IssuerProfile = {
+  id: "issuer-wacharakiat-oil",
+  name: "หจก. วัชรเกียรติออยล์",
+  taxId: "0-6235-39000-91-1",
+  address: "657 ถ.เจริญสุข ต.ในเมือง อ.เมือง จ.กำแพงเพชร 62000",
+  phone: "",
+  email: "",
+  bankAccountName: "หจก. วัชรเกียรติออยล์",
+  bankAccountNumber: "347-0-73533-6",
+  bankName: "กรุงไทย",
+  bankBranch: "ชากังราว",
+  paymentLineId: "be-bie",
+  promptpayId: "0812345678",
+  vatRate: 7,
+  vatEnabledDefault: true,
+  active: true,
+  isDefault: true,
+};
+
+const electricInvoices: Invoice[] = billingRows.map((row) => {
   const reading = readings.find((item) => item.id === `reading-${row.id}`);
   const item: InvoiceItem = {
     id: `item-electric-${row.id}`,
@@ -149,6 +171,7 @@ const invoices: Invoice[] = billingRows.map((row) => {
     id: `invoice-${row.id}`,
     tenantId,
     cycleId: `cycle-${row.id}`,
+    issuerProfileId: demoIssuerProfile.id,
     invoiceNo: row.invoiceNo,
     type: "electricity",
     issueDate: row.issueDate,
@@ -163,26 +186,104 @@ const invoices: Invoice[] = billingRows.map((row) => {
     paid: totals.paid,
     balance: totals.balance,
     status: "issued",
+    carryovers: [],
   };
 });
+
+const fuelItems: InvoiceItem[] = Array.from({ length: 31 }, (_, index) => {
+  const day = index + 1;
+  const quantity = day === 1 ? 38000 : day % 4 === 0 ? 76000 : 38000;
+  const unitPrice = 0.21;
+
+  return {
+    id: `fuel-item-2569-05-${day}`,
+    type: "fuel_transport",
+    description: `ค่าขนส่งน้ำมัน รอบวิ่ง ${day}`,
+    quantity,
+    unitPrice,
+    amount: quantity * unitPrice,
+    serviceDate: `2026-05-${String(day).padStart(2, "0")}T00:00:00.000Z`,
+    tripLabel: `รอบวิ่ง ${day}`,
+    displayOrder: index,
+  };
+});
+
+const fuelCarryovers: InvoiceCarryover[] = [
+  {
+    id: "fuel-carryover-jan",
+    sourceInvoiceNo: "OIL-256901",
+    label: "ยอดค้าง มกราคม 2569",
+    periodLabel: "ม.ค. 69",
+    quantity: 760000,
+    unitPrice: 0.17,
+    amount: 129200,
+    includedInTotal: true,
+    displayOrder: 0,
+  },
+  {
+    id: "fuel-carryover-feb",
+    sourceInvoiceNo: "OIL-256902",
+    label: "ยอดค้าง กุมภาพันธ์ 2569",
+    periodLabel: "ก.พ. 69",
+    quantity: 646000,
+    unitPrice: 0.17,
+    amount: 109820,
+    includedInTotal: true,
+    displayOrder: 1,
+  },
+];
+const fuelCurrentTotals = calculateInvoiceTotals({
+  items: fuelItems,
+  vatEnabled: false,
+  vatRate: 7,
+});
+const fuelCarryoverTotal = fuelCarryovers.reduce(
+  (sum, row) => sum + row.amount,
+  0,
+);
+const fuelInvoice: Invoice = {
+  id: "invoice-fuel-2569-05",
+  tenantId: fuelTenantId,
+  cycleId: "cycle-2569-05",
+  issuerProfileId: demoIssuerProfile.id,
+  invoiceNo: "OIL-256905",
+  type: "fuel_transport",
+  issueDate: "2026-05-31",
+  dueDate: "2026-06-07",
+  items: fuelItems,
+  subtotal: fuelCurrentTotals.subtotal,
+  discount: fuelCurrentTotals.discount,
+  vatEnabled: false,
+  vatRate: fuelCurrentTotals.vatRate,
+  vatAmount: fuelCurrentTotals.vatAmount,
+  total: fuelCurrentTotals.total + fuelCarryoverTotal,
+  paid: 0,
+  balance: fuelCurrentTotals.total + fuelCarryoverTotal,
+  status: "issued",
+  notes: "ค่าขนส่งน้ำมัน พฤษภาคม 2569",
+  carryovers: fuelCarryovers,
+};
+
+const invoices: Invoice[] = [fuelInvoice, ...electricInvoices];
 
 export const demoDashboardData: DashboardData = {
   organization: {
     id: "org-wacharakiat-oil",
-    name: "หจก. วัชรเกียรติออยล์",
-    taxId: "0-6235-39000-91-1",
-    address: "657 ถ.เจริญสุข ต.ในเมือง อ.เมือง จ.กำแพงเพชร 62000",
-    phone: "",
-    email: "",
-    bankAccountName: "หจก. วัชรเกียรติออยล์",
-    bankAccountNumber: "347-0-73533-6",
-    bankName: "กรุงไทย",
-    bankBranch: "ชากังราว",
-    paymentLineId: "be-bie",
-    promptpayId: "0812345678",
-    vatRate: 7,
-    vatEnabledDefault: true,
+    name: demoIssuerProfile.name,
+    taxId: demoIssuerProfile.taxId,
+    address: demoIssuerProfile.address,
+    phone: demoIssuerProfile.phone,
+    email: demoIssuerProfile.email,
+    bankAccountName: demoIssuerProfile.bankAccountName,
+    bankAccountNumber: demoIssuerProfile.bankAccountNumber,
+    bankName: demoIssuerProfile.bankName,
+    bankBranch: demoIssuerProfile.bankBranch,
+    paymentLineId: demoIssuerProfile.paymentLineId,
+    promptpayId: demoIssuerProfile.promptpayId,
+    vatRate: demoIssuerProfile.vatRate,
+    vatEnabledDefault: demoIssuerProfile.vatEnabledDefault,
   },
+  issuerProfiles: [demoIssuerProfile],
   users: [
     {
       id: "user-admin",
@@ -245,7 +346,7 @@ export const demoDashboardData: DashboardData = {
       status: "active",
     },
     {
-      id: "tenant-taifah",
+      id: fuelTenantId,
       code: "TAIFAH",
       name: "หจก. ใต้ฟ้าปิโตรเลียม",
       contactName: "",

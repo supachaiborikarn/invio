@@ -1,7 +1,16 @@
 "use client";
 
 import { useState, useMemo, type FormEvent } from "react";
-import { AlertCircle, Mail, Pencil, Plus, Trash2, Printer } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowDown,
+  ArrowUp,
+  Mail,
+  Pencil,
+  Plus,
+  Printer,
+  Trash2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,10 +66,13 @@ import {
   dateInputValue,
   editableInvoiceTypes,
   today,
+  createFuelCarryoverRow,
   createFuelTripRow,
+  normalizeFuelCarryoverRows,
   normalizeFuelTripRows,
   createInvoiceEditRow,
   normalizeInvoiceEditRows,
+  FuelCarryoverFormRow,
   FuelTripFormRow,
   InvoiceEditFormRow,
 } from "./utils";
@@ -787,20 +799,65 @@ function FuelTransportInvoiceDialog({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const [tenantId, setTenantId] = useState(data.tenants[0]?.id ?? "");
+  const defaultIssuer =
+    data.issuerProfiles.find((profile) => profile.isDefault && profile.active) ??
+    data.issuerProfiles.find((profile) => profile.active) ??
+    data.issuerProfiles[0];
+  const [issuerProfileId, setIssuerProfileId] = useState(defaultIssuer?.id ?? "");
+  const [carryoverMode, setCarryoverMode] = useState<"include" | "display">("include");
   const defaultTripDate = activeCycle.periodStart.slice(0, 10);
   const [tripRows, setTripRows] = useState<FuelTripFormRow[]>(() => [
     createFuelTripRow(defaultTripDate, 0),
   ]);
+  const createAutoCarryovers = (nextTenantId: string) =>
+    data.invoices
+      .filter(
+        (invoice) =>
+          invoice.tenantId === nextTenantId &&
+          invoice.type === "fuel_transport" &&
+          invoice.balance > 0 &&
+          invoice.status !== "void",
+      )
+      .map((invoice, index) =>
+        createFuelCarryoverRow(index, {
+          sourceInvoiceId: invoice.id,
+          sourceInvoiceNo: invoice.invoiceNo,
+          label: `ยอดค้าง ${invoice.invoiceNo}`,
+          periodLabel:
+            data.cycles.find((cycle) => cycle.id === invoice.cycleId)?.label ??
+            invoice.invoiceNo,
+          amount: String(invoice.balance),
+        }),
+      );
+  const [carryoverRows, setCarryoverRows] = useState<FuelCarryoverFormRow[]>(() =>
+    createAutoCarryovers(data.tenants[0]?.id ?? ""),
+  );
   const tenant = getTenant(data, tenantId);
   const normalizedTrips = useMemo(
     () => normalizeFuelTripRows(tripRows),
     [tripRows],
   );
+  const normalizedCarryovers = useMemo(
+    () => normalizeFuelCarryoverRows(carryoverRows, carryoverMode === "include"),
+    [carryoverRows, carryoverMode],
+  );
   const tripSubtotal = normalizedTrips.reduce(
     (sum, row) => sum + row.quantity * row.unitPrice,
     0,
   );
+  const carryoverTotal = normalizedCarryovers.reduce(
+    (sum, row) => sum + row.amount,
+    0,
+  );
+  const includedCarryoverTotal =
+    carryoverMode === "include" ? carryoverTotal : 0;
   const itemsJson = JSON.stringify(normalizedTrips);
+  const carryoversJson = JSON.stringify(normalizedCarryovers);
+
+  const updateTenant = (nextTenantId: string) => {
+    setTenantId(nextTenantId);
+    setCarryoverRows(createAutoCarryovers(nextTenantId));
+  };
 
   const updateTripRow = (
     rowId: string,
@@ -821,26 +878,72 @@ function FuelTransportInvoiceDialog({
     ]);
   };
 
+  const sortTripsByDate = () => {
+    setTripRows((current) =>
+      [...current].sort((a, b) => {
+        const dateSort = a.date.localeCompare(b.date);
+        if (dateSort) return dateSort;
+        return a.label.localeCompare(b.label, "th");
+      }),
+    );
+  };
+
+  const moveTripRow = (rowId: string, direction: -1 | 1) => {
+    setTripRows((current) => {
+      const index = current.findIndex((row) => row.id === rowId);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current;
+      const next = [...current];
+      const [row] = next.splice(index, 1);
+      next.splice(nextIndex, 0, row);
+      return next;
+    });
+  };
+
   const removeTripRow = (rowId: string) => {
     setTripRows((current) =>
       current.length > 1 ? current.filter((row) => row.id !== rowId) : current,
     );
   };
 
+  const updateCarryoverRow = (
+    rowId: string,
+    key: keyof Omit<FuelCarryoverFormRow, "id" | "sourceInvoiceId" | "sourceInvoiceNo">,
+    value: string,
+  ) => {
+    setCarryoverRows((current) =>
+      current.map((row) =>
+        row.id === rowId ? { ...row, [key]: value } : row,
+      ),
+    );
+  };
+
+  const addCarryoverRow = () => {
+    setCarryoverRows((current) => [
+      ...current,
+      createFuelCarryoverRow(current.length),
+    ]);
+  };
+
+  const removeCarryoverRow = (rowId: string) => {
+    setCarryoverRows((current) => current.filter((row) => row.id !== rowId));
+  };
+
   return (
-    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-5xl">
       <DialogHeader>
         <DialogTitle>ออกใบแจ้งหนี้ค่าขนส่งน้ำมัน</DialogTitle>
-        <DialogDescription>เลือกผู้ถูกเรียกเก็บและกรอกรอบวิ่ง</DialogDescription>
+        <DialogDescription>กรอกลิตรและบาทต่อลิตร ระบบจะเรียงตามวันที่ตอนบันทึก</DialogDescription>
       </DialogHeader>
       <form onSubmit={onSubmit} className="grid gap-4">
         <input type="hidden" name="billingCycleId" value={activeCycle.id} />
         <input type="hidden" name="type" value="fuel_transport" />
         <input type="hidden" name="itemsJson" value={itemsJson} />
-        <div className="grid gap-3">
+        <input type="hidden" name="carryoversJson" value={carryoversJson} />
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_12rem]">
           <div className="grid min-w-0 gap-2">
             <Label>ผู้ถูกเรียกเก็บ</Label>
-            <Select name="tenantId" value={tenantId} onValueChange={setTenantId}>
+            <Select name="tenantId" value={tenantId} onValueChange={updateTenant}>
               <SelectTrigger className="w-full min-w-0 [&_[data-slot=select-value]]:block [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:truncate">
                 <SelectValue placeholder="เลือกผู้ถูกเรียกเก็บ" />
               </SelectTrigger>
@@ -855,7 +958,28 @@ function FuelTransportInvoiceDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="max-w-xs">
+          <div className="grid min-w-0 gap-2">
+            <Label>หัวเอกสาร</Label>
+            <Select
+              name="issuerProfileId"
+              value={issuerProfileId}
+              onValueChange={setIssuerProfileId}
+            >
+              <SelectTrigger className="w-full min-w-0 [&_[data-slot=select-value]]:block [&_[data-slot=select-value]]:truncate">
+                <SelectValue placeholder="เลือกหัวเอกสาร" />
+              </SelectTrigger>
+              <SelectContent>
+                {data.issuerProfiles
+                  .filter((profile) => profile.active)
+                  .map((profile) => (
+                    <SelectItem key={profile.id} value={profile.id}>
+                      {profile.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
             <Field
               label="กำหนดชำระ"
               name="dueDate"
@@ -866,22 +990,22 @@ function FuelTransportInvoiceDialog({
         </div>
         <div className="grid gap-3">
           <div className="flex items-center justify-between gap-3">
-            <Label>รายการรอบวิ่ง</Label>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addTripRow}
-            >
-              <Plus className="size-4" />
-              เพิ่มรอบวิ่ง
-            </Button>
+            <Label>รายการรายวัน</Label>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={sortTripsByDate}>
+                เรียงตามวันที่
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={addTripRow}>
+                <Plus className="size-4" />
+                เพิ่มรายการ
+              </Button>
+            </div>
           </div>
-          <div className="grid gap-3 max-h-[40vh] overflow-y-auto pr-1">
+          <div className="grid gap-3 max-h-[34vh] overflow-y-auto pr-1">
             {tripRows.map((row, index) => (
               <div
                 key={row.id}
-                className="grid gap-3 rounded-lg border p-3 lg:grid-cols-[10rem_minmax(0,1fr)_7rem_10rem_2.5rem]"
+                className="grid gap-3 rounded-md border p-3 lg:grid-cols-[9rem_minmax(0,1fr)_8rem_8rem_8rem_6.5rem]"
               >
                 <div className="grid gap-2">
                   <Label htmlFor={`fuelTripDate-${row.id}`}>วันที่วิ่ง</Label>
@@ -906,7 +1030,7 @@ function FuelTransportInvoiceDialog({
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor={`fuelTripQuantity-${row.id}`}>จำนวนเที่ยว</Label>
+                  <Label htmlFor={`fuelTripQuantity-${row.id}`}>จำนวนลิตร</Label>
                   <Input
                     id={`fuelTripQuantity-${row.id}`}
                     type="number"
@@ -919,7 +1043,7 @@ function FuelTransportInvoiceDialog({
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor={`fuelTripPrice-${row.id}`}>ค่าเที่ยว</Label>
+                  <Label htmlFor={`fuelTripPrice-${row.id}`}>บาทต่อลิตร</Label>
                   <Input
                     id={`fuelTripPrice-${row.id}`}
                     type="number"
@@ -931,25 +1055,147 @@ function FuelTransportInvoiceDialog({
                     }
                   />
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="mt-6 size-9 text-destructive"
-                  disabled={tripRows.length === 1}
-                  onClick={() => removeTripRow(row.id)}
-                >
-                  <Trash2 className="size-4" />
-                  <span className="sr-only">ลบรอบวิ่ง</span>
-                </Button>
+                <Info
+                  label="ยอด"
+                  value={formatCurrency((Number(row.quantity) || 0) * (Number(row.unitPrice) || 0))}
+                  className="pt-1 font-mono text-[var(--font-mono)]"
+                />
+                <div className="mt-6 flex gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    disabled={index === 0}
+                    onClick={() => moveTripRow(row.id, -1)}
+                  >
+                    <ArrowUp className="size-4" />
+                    <span className="sr-only">เลื่อนขึ้น</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    disabled={index === tripRows.length - 1}
+                    onClick={() => moveTripRow(row.id, 1)}
+                  >
+                    <ArrowDown className="size-4" />
+                    <span className="sr-only">เลื่อนลง</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 text-destructive"
+                    disabled={tripRows.length === 1}
+                    onClick={() => removeTripRow(row.id)}
+                  >
+                    <Trash2 className="size-4" />
+                    <span className="sr-only">ลบรายการ</span>
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
           <div className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm font-semibold">
-            <span className="text-muted-foreground font-normal">รวมก่อน VAT</span>
+            <span className="text-muted-foreground font-normal">ยอดเดือนนี้ก่อน VAT</span>
             <span className="font-mono text-foreground">{formatCurrency(tripSubtotal)}</span>
           </div>
         </div>
+
+        <div className="grid gap-3 rounded-md border border-border p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <Label>ยอดค้างเก่า</Label>
+              <p className="mt-1 text-xs text-muted-foreground">
+                ระบบดึงใบค่าน้ำมันเก่าที่ยังค้างของลูกค้าคนนี้มาให้
+              </p>
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={addCarryoverRow}>
+              <Plus className="size-4" />
+              เพิ่มยอดค้าง
+            </Button>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-[16rem_1fr]">
+            <div className="grid gap-2">
+              <Label>การคิดยอดค้าง</Label>
+              <Select
+                value={carryoverMode}
+                onValueChange={(value) => setCarryoverMode(value as "include" | "display")}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="include">รวมในยอดต้องจ่าย</SelectItem>
+                  <SelectItem value="display">แสดงแยกไว้เฉย ๆ</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+              <Info label="ยอดค้างเก่า" value={formatCurrency(carryoverTotal)} className="font-mono text-[var(--font-mono)]" />
+              <Info label="นำไปรวมยอด" value={formatCurrency(includedCarryoverTotal)} className="font-mono text-[var(--font-mono)]" />
+              <Info label="ยอดก่อน VAT" value={formatCurrency(tripSubtotal)} className="font-mono text-[var(--font-mono)]" />
+            </div>
+          </div>
+          {carryoverRows.length ? (
+            <div className="grid gap-2">
+              {carryoverRows.map((row, index) => (
+                <div
+                  key={row.id}
+                  className="grid gap-2 rounded-md border border-border/80 p-2 lg:grid-cols-[minmax(0,1fr)_9rem_7rem_7rem_7rem_2.5rem]"
+                >
+                  <Input
+                    value={row.label}
+                    placeholder={`ยอดค้าง ${index + 1}`}
+                    onChange={(event) => updateCarryoverRow(row.id, "label", event.target.value)}
+                  />
+                  <Input
+                    value={row.periodLabel}
+                    placeholder="เดือน"
+                    onChange={(event) => updateCarryoverRow(row.id, "periodLabel", event.target.value)}
+                  />
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={row.quantity}
+                    placeholder="ลิตร"
+                    onChange={(event) => updateCarryoverRow(row.id, "quantity", event.target.value)}
+                  />
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={row.unitPrice}
+                    placeholder="บาท/ลิตร"
+                    onChange={(event) => updateCarryoverRow(row.id, "unitPrice", event.target.value)}
+                  />
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={row.amount}
+                    placeholder="ยอดเงิน"
+                    onChange={(event) => updateCarryoverRow(row.id, "amount", event.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-9 text-destructive"
+                    onClick={() => removeCarryoverRow(row.id)}
+                  >
+                    <Trash2 className="size-4" />
+                    <span className="sr-only">ลบยอดค้าง</span>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">ไม่มีใบค่าน้ำมันเก่าที่ยังค้าง</p>
+          )}
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-2">
           <Field
             label="ส่วนลด"
@@ -980,7 +1226,7 @@ function FuelTransportInvoiceDialog({
           name="description"
           defaultValue={`ค่าขนส่งน้ำมัน ${activeCycle.label}`}
         />
-        <Button type="submit" disabled={!data.tenants.length} className="w-full">
+        <Button type="submit" disabled={!data.tenants.length || !issuerProfileId} className="w-full">
           ออกใบแจ้งหนี้
         </Button>
       </form>

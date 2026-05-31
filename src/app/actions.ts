@@ -8,8 +8,10 @@ import {
   appUsers,
   billingCycles,
   invoiceAuditLogs,
+  invoiceCarryovers,
   invoiceItems,
   invoices,
+  issuerProfiles,
   meterReadings,
   organizations,
   payments,
@@ -29,7 +31,7 @@ import {
 import { getBillingEmailFrom, getResend } from "@/lib/email";
 import { isResendConfigured } from "@/lib/dashboard-data";
 import { createPortalLinkForTenant } from "@/lib/portal-links";
-import type { InvoiceItem, InvoiceType } from "@/lib/types";
+import type { InvoiceCarryover, InvoiceItem, InvoiceType } from "@/lib/types";
 
 type ActionResult = {
   ok: boolean;
@@ -90,6 +92,60 @@ async function getDefaultOrganizationId() {
   return created.id;
 }
 
+async function getDefaultIssuerProfileId(organizationId: string) {
+  const db = getDb();
+  const [defaultProfile] = await db
+    .select({ id: issuerProfiles.id })
+    .from(issuerProfiles)
+    .where(
+      and(
+        eq(issuerProfiles.organizationId, organizationId),
+        eq(issuerProfiles.isDefault, true),
+      ),
+    )
+    .limit(1);
+
+  if (defaultProfile) return defaultProfile.id;
+
+  const [firstProfile] = await db
+    .select({ id: issuerProfiles.id })
+    .from(issuerProfiles)
+    .where(eq(issuerProfiles.organizationId, organizationId))
+    .limit(1);
+
+  if (firstProfile) return firstProfile.id;
+
+  const [organization] = await db
+    .select()
+    .from(organizations)
+    .where(eq(organizations.id, organizationId))
+    .limit(1);
+
+  const [created] = await db
+    .insert(issuerProfiles)
+    .values({
+      organizationId,
+      name: organization?.name || "องค์กรของฉัน",
+      taxId: organization?.taxId || "",
+      address: organization?.address || "",
+      phone: organization?.phone || "",
+      email: organization?.email || "",
+      bankAccountName: organization?.bankAccountName || "",
+      bankAccountNumber: organization?.bankAccountNumber || "",
+      bankName: organization?.bankName || "",
+      bankBranch: organization?.bankBranch || "",
+      paymentLineId: organization?.paymentLineId || "",
+      promptpayId: organization?.promptpayId || "",
+      vatRateBasisPoints: organization?.vatRateBasisPoints ?? 700,
+      vatEnabledDefault: organization?.vatEnabledDefault ?? true,
+      active: true,
+      isDefault: true,
+    })
+    .returning({ id: issuerProfiles.id });
+
+  return created.id;
+}
+
 function requireDatabase(): ActionResult | null {
   if (hasDatabase()) return null;
 
@@ -139,6 +195,19 @@ const fuelTripItemsSchema = z.array(
   }),
 );
 
+const fuelCarryoversSchema = z.array(
+  z.object({
+    sourceInvoiceId: z.string().optional(),
+    sourceInvoiceNo: z.string().optional(),
+    label: z.string().optional(),
+    periodLabel: z.string().optional(),
+    quantity: z.coerce.number().optional(),
+    unitPrice: z.coerce.number().optional(),
+    amount: z.coerce.number().optional(),
+    includedInTotal: z.coerce.boolean().optional(),
+  }),
+);
+
 const editableInvoiceItemsSchema = z.array(
   z.object({
     type: z.string(),
@@ -182,8 +251,13 @@ function parseFuelTripItems(value: string): ActionFailure | { ok: true; items: I
   }
 
   const items = parsed.data
+    .sort((a, b) => {
+      const dateSort = (a.date ?? "").localeCompare(b.date ?? "");
+      if (dateSort) return dateSort;
+      return (a.label ?? "").localeCompare(b.label ?? "", "th");
+    })
     .map((trip, index): InvoiceItem => {
-      const quantity = Math.max(Math.round(trip.quantity), 1);
+      const quantity = Math.max(Math.round(trip.quantity), 0);
       const unitPrice = Number.isFinite(trip.unitPrice) ? trip.unitPrice : 0;
       const tripLabel = trip.label?.trim() || `รอบวิ่ง ${index + 1}`;
       const tripDate = formatFuelTripDate(trip.date);
@@ -200,15 +274,85 @@ function parseFuelTripItems(value: string): ActionFailure | { ok: true; items: I
         quantity,
         unitPrice,
         amount: quantity * unitPrice,
+        serviceDate: trip.date
+          ? toDateValue(trip.date).toISOString()
+          : undefined,
+        tripLabel,
+        displayOrder: index,
       };
     })
-    .filter((item) => item.unitPrice > 0);
+    .filter((item) => item.quantity > 0 && item.unitPrice > 0);
 
   if (!items.length) {
-    return { ok: false, message: "ต้องกรอกค่าเที่ยวอย่างน้อย 1 รอบวิ่ง" };
+    return { ok: false, message: "ต้องกรอกลิตรและบาทต่อลิตรอย่างน้อย 1 รายการ" };
   }
 
   return { ok: true, items };
+}
+
+function parseFuelCarryovers(
+  value: string,
+): ActionFailure | { ok: true; carryovers: InvoiceCarryover[] } {
+  if (!value) return { ok: true, carryovers: [] };
+
+  let payload: unknown;
+
+  try {
+    payload = JSON.parse(value);
+  } catch {
+    return { ok: false, message: "ยอดค้างเก่าไม่ถูกต้อง" };
+  }
+
+  const parsed = fuelCarryoversSchema.safeParse(payload);
+
+  if (!parsed.success) {
+    return { ok: false, message: "ยอดค้างเก่าไม่ถูกต้อง" };
+  }
+
+  const carryovers = parsed.data
+    .map((row, index): InvoiceCarryover | null => {
+      const quantity = Math.max(Math.round(row.quantity ?? 0), 0);
+      const unitPrice = Number.isFinite(row.unitPrice) ? row.unitPrice ?? 0 : 0;
+      const typedAmount = Number.isFinite(row.amount) ? row.amount ?? 0 : 0;
+      const amount = typedAmount || quantity * unitPrice;
+
+      if (amount <= 0) return null;
+
+      return {
+        id: `carryover-${index + 1}`,
+        sourceInvoiceId: row.sourceInvoiceId || undefined,
+        sourceInvoiceNo: row.sourceInvoiceNo || undefined,
+        label: row.label?.trim() || `ยอดค้าง ${index + 1}`,
+        periodLabel: row.periodLabel?.trim() || "",
+        quantity,
+        unitPrice,
+        amount,
+        includedInTotal: Boolean(row.includedInTotal),
+        displayOrder: index,
+      };
+    })
+    .filter((row): row is InvoiceCarryover => Boolean(row));
+
+  return { ok: true, carryovers };
+}
+
+function carryoverIncludedTotal(carryovers: InvoiceCarryover[]) {
+  return carryovers
+    .filter((row) => row.includedInTotal)
+    .reduce((sum, row) => sum + row.amount, 0);
+}
+
+function addCarryoversToTotals<T extends ReturnType<typeof calculateInvoiceTotals>>(
+  totals: T,
+  carryovers: InvoiceCarryover[],
+): T {
+  const includedTotal = carryoverIncludedTotal(carryovers);
+
+  return {
+    ...totals,
+    total: totals.total + includedTotal,
+    balance: totals.balance + includedTotal,
+  };
 }
 
 function parseEditableInvoiceItems(
@@ -563,6 +707,92 @@ export async function updateOrganizationAction(
   return { ok: true, message: "แก้ไขข้อมูลบริษัทแล้ว" };
 }
 
+export async function saveIssuerProfileAction(
+  _previousState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireAdminAction();
+  if (!user.ok) return user;
+
+  const databaseError = requireDatabase();
+  if (databaseError) return databaseError;
+
+  const organizationId = await getDefaultOrganizationId();
+  const issuerProfileId = textValue(formData, "issuerProfileId");
+  const name = textValue(formData, "name");
+
+  if (!name) {
+    return { ok: false, message: "ต้องกรอกชื่อหัวเอกสาร" };
+  }
+
+  const isDefault = booleanValue(formData, "isDefault");
+  const values = {
+    organizationId,
+    name,
+    taxId: textValue(formData, "taxId"),
+    address: textValue(formData, "address"),
+    phone: textValue(formData, "phone"),
+    email: textValue(formData, "email"),
+    bankAccountName: textValue(formData, "bankAccountName"),
+    bankAccountNumber: textValue(formData, "bankAccountNumber"),
+    bankName: textValue(formData, "bankName"),
+    bankBranch: textValue(formData, "bankBranch"),
+    paymentLineId: textValue(formData, "paymentLineId"),
+    promptpayId: textValue(formData, "promptpayId"),
+    vatRateBasisPoints: Math.round(numberValue(formData, "vatRate") * 100),
+    vatEnabledDefault: booleanValue(formData, "vatEnabledDefault"),
+    active: booleanValue(formData, "active"),
+    isDefault,
+    updatedAt: new Date(),
+  };
+  const db = getDb();
+
+  if (isDefault) {
+    await db
+      .update(issuerProfiles)
+      .set({ isDefault: false })
+      .where(eq(issuerProfiles.organizationId, organizationId));
+  }
+
+  const [existingProfile] = issuerProfileId
+    ? await db
+        .select({ id: issuerProfiles.id })
+        .from(issuerProfiles)
+        .where(
+          and(
+            eq(issuerProfiles.id, issuerProfileId),
+            eq(issuerProfiles.organizationId, organizationId),
+          ),
+        )
+        .limit(1)
+    : [];
+
+  if (existingProfile) {
+    await db
+      .update(issuerProfiles)
+      .set(values)
+      .where(
+        and(
+          eq(issuerProfiles.id, existingProfile.id),
+          eq(issuerProfiles.organizationId, organizationId),
+        ),
+      );
+  } else {
+    const [existingCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(issuerProfiles)
+      .where(eq(issuerProfiles.organizationId, organizationId));
+
+    await db.insert(issuerProfiles).values({
+      ...values,
+      isDefault: isDefault || Number(existingCount?.count ?? 0) === 0,
+    });
+  }
+
+  revalidatePath("/");
+  return { ok: true, message: "บันทึกหัวเอกสารแล้ว" };
+}
+
 export async function updateUserRoleAction(
   _previousState: ActionResult,
   formData: FormData,
@@ -902,9 +1132,18 @@ export async function createInvoiceForUnitAction(
   const vatEnabled = booleanValue(formData, "vatEnabled");
   const dueDate = textValue(formData, "dueDate");
   const itemsJson = textValue(formData, "itemsJson");
+  const carryoversJson = textValue(formData, "carryoversJson");
+  const requestedIssuerProfileId = textValue(formData, "issuerProfileId");
 
   const db = getDb();
   const organizationId = await getDefaultOrganizationId();
+  const issuerProfileId =
+    requestedIssuerProfileId || (await getDefaultIssuerProfileId(organizationId));
+  const [issuerProfile] = await db
+    .select({ vatRateBasisPoints: issuerProfiles.vatRateBasisPoints })
+    .from(issuerProfiles)
+    .where(eq(issuerProfiles.id, issuerProfileId))
+    .limit(1);
 
   if (requestedType === "electricity") {
     return {
@@ -939,11 +1178,16 @@ export async function createInvoiceForUnitAction(
   }
 
   let items: InvoiceItem[];
+  let carryovers: InvoiceCarryover[] = [];
 
   if (type === "fuel_transport" && itemsJson) {
     const parsedItems = parseFuelTripItems(itemsJson);
     if (!parsedItems.ok) return parsedItems;
     items = parsedItems.items;
+
+    const parsedCarryovers = parseFuelCarryovers(carryoversJson);
+    if (!parsedCarryovers.ok) return parsedCarryovers;
+    carryovers = parsedCarryovers.carryovers;
   } else {
     if (unitPrice <= 0) {
       return { ok: false, message: "ข้อมูลใบแจ้งหนี้ไม่ครบ" };
@@ -961,11 +1205,15 @@ export async function createInvoiceForUnitAction(
     ];
   }
 
-  const totals = calculateInvoiceTotals({
-    items,
-    discount,
-    vatEnabled,
-  });
+  const totals = addCarryoversToTotals(
+    calculateInvoiceTotals({
+      items,
+      discount,
+      vatEnabled,
+      vatRate: (issuerProfile?.vatRateBasisPoints ?? 700) / 100,
+    }),
+    carryovers,
+  );
   const invoiceNo = nextRunningNo(
     invoicePrefixFromDate(new Date()),
     Number(
@@ -984,6 +1232,7 @@ export async function createInvoiceForUnitAction(
       organizationId,
       tenantId,
       billingCycleId,
+      issuerProfileId,
       invoiceNo,
       type,
       issueDate: new Date(),
@@ -1008,8 +1257,28 @@ export async function createInvoiceForUnitAction(
       quantity: item.quantity,
       unitPriceSatang: toSatang(item.unitPrice),
       amountSatang: toSatang(item.amount),
+      serviceDate: item.serviceDate ? new Date(item.serviceDate) : undefined,
+      tripLabel: item.tripLabel ?? "",
+      displayOrder: item.displayOrder ?? 0,
     })),
   );
+
+  if (carryovers.length) {
+    await db.insert(invoiceCarryovers).values(
+      carryovers.map((item) => ({
+        invoiceId: invoice.id,
+        sourceInvoiceId: item.sourceInvoiceId,
+        sourceInvoiceNo: item.sourceInvoiceNo ?? "",
+        label: item.label,
+        periodLabel: item.periodLabel,
+        quantity: item.quantity,
+        unitPriceSatang: toSatang(item.unitPrice),
+        amountSatang: toSatang(item.amount),
+        includedInTotal: item.includedInTotal,
+        displayOrder: item.displayOrder,
+      })),
+    );
+  }
 
   revalidatePath("/");
   return { ok: true, message: "ออกใบแจ้งหนี้แล้ว" };
@@ -1075,11 +1344,32 @@ export async function updateInvoiceAction(
     items: parsedItems.items,
     discount,
     vatEnabled,
+    vatRate: invoice.vatRateBasisPoints / 100,
   });
+  const existingCarryovers = await db
+    .select()
+    .from(invoiceCarryovers)
+    .where(eq(invoiceCarryovers.invoiceId, invoiceId));
+  const totalsWithCarryovers = addCarryoversToTotals(
+    totals,
+    existingCarryovers.map((item, index) => ({
+      id: item.id,
+      invoiceId: item.invoiceId,
+      sourceInvoiceId: item.sourceInvoiceId ?? undefined,
+      sourceInvoiceNo: item.sourceInvoiceNo || undefined,
+      label: item.label,
+      periodLabel: item.periodLabel,
+      quantity: item.quantity,
+      unitPrice: item.unitPriceSatang / 100,
+      amount: item.amountSatang / 100,
+      includedInTotal: item.includedInTotal,
+      displayOrder: item.displayOrder ?? index,
+    })),
+  );
   const paid = invoice.paidSatang / 100;
   const newDueDate = toDateValue(dueDate);
   const status = deriveInvoiceStatus({
-    total: totals.total,
+    total: totalsWithCarryovers.total,
     paid,
     dueDate: newDueDate.toISOString(),
     issued: true,
@@ -1092,13 +1382,13 @@ export async function updateInvoiceAction(
       tenantId,
       type: nextType,
       dueDate: newDueDate,
-      subtotalSatang: toSatang(totals.subtotal),
-      discountSatang: toSatang(totals.discount),
-      vatRateBasisPoints: totals.vatRate * 100,
+      subtotalSatang: toSatang(totalsWithCarryovers.subtotal),
+      discountSatang: toSatang(totalsWithCarryovers.discount),
+      vatRateBasisPoints: totalsWithCarryovers.vatRate * 100,
       vatEnabled,
-      vatAmountSatang: toSatang(totals.vatAmount),
-      totalSatang: toSatang(totals.total),
-      balanceSatang: Math.max(toSatang(totals.total) - invoice.paidSatang, 0),
+      vatAmountSatang: toSatang(totalsWithCarryovers.vatAmount),
+      totalSatang: toSatang(totalsWithCarryovers.total),
+      balanceSatang: Math.max(toSatang(totalsWithCarryovers.total) - invoice.paidSatang, 0),
       status,
       notes,
       updatedAt: new Date(),
@@ -1115,6 +1405,9 @@ export async function updateInvoiceAction(
       quantity: item.quantity,
       unitPriceSatang: toSatang(item.unitPrice),
       amountSatang: toSatang(item.amount),
+      serviceDate: item.serviceDate ? new Date(item.serviceDate) : undefined,
+      tripLabel: item.tripLabel ?? "",
+      displayOrder: item.displayOrder ?? 0,
     })),
   );
 

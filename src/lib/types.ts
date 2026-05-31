@@ -55,6 +55,25 @@ export type Organization = {
   vatEnabledDefault: boolean;
 };
 
+export type IssuerProfile = {
+  id: string;
+  name: string;
+  taxId: string;
+  address: string;
+  phone: string;
+  email: string;
+  bankAccountName: string;
+  bankAccountNumber: string;
+  bankName: string;
+  bankBranch: string;
+  paymentLineId: string;
+  promptpayId: string;
+  vatRate: number;
+  vatEnabledDefault: boolean;
+  active: boolean;
+  isDefault: boolean;
+};
+
 export type Tenant = {
   id: string;
   code: string;
@@ -119,12 +138,30 @@ export type InvoiceItem = {
   unitPrice: number;
   amount: number;
   meterReadingId?: string;
+  serviceDate?: string;
+  tripLabel?: string;
+  displayOrder?: number;
+};
+
+export type InvoiceCarryover = {
+  id: string;
+  invoiceId?: string;
+  sourceInvoiceId?: string;
+  sourceInvoiceNo?: string;
+  label: string;
+  periodLabel: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+  includedInTotal: boolean;
+  displayOrder: number;
 };
 
 export type Invoice = {
   id: string;
   tenantId: string;
   cycleId: string;
+  issuerProfileId?: string;
   invoiceNo: string;
   type: InvoiceType;
   issueDate: string;
@@ -140,6 +177,7 @@ export type Invoice = {
   balance: number;
   status: InvoiceStatus;
   notes?: string;
+  carryovers: InvoiceCarryover[];
 };
 
 export type Payment = {
@@ -207,6 +245,7 @@ export type InvoiceAuditLog = {
 
 export type DashboardData = {
   organization: Organization;
+  issuerProfiles: IssuerProfile[];
   users: Array<{
     id: string;
     name: string;
