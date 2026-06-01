@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import type { ReactNode } from "react";
+import * as QRCode from "qrcode";
 import { formatInvoiceType, formatNumber } from "@/lib/billing";
 import type { InvoiceMeterEvidence } from "@/lib/dashboard-data";
 import type {
@@ -232,9 +233,7 @@ export function InvoiceDocument({
   const hasValidPromptPay = cleanPp.length === 10 || cleanPp.length === 13 || cleanPp.length === 15;
 
   const qrPayload = hasValidPromptPay ? generatePromptPayPayload(cleanPp, invoice.total) : "";
-  const qrImageUrl = qrPayload
-    ? `https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encodeURIComponent(qrPayload)}`
-    : "";
+  const qrImageUrl = qrPayload ? generateQrSvgDataUrl(qrPayload) : "";
 
   return (
     <article className="mx-auto w-full max-w-[210mm] bg-white p-3 text-[12px] leading-snug text-foreground print:max-w-none print:p-0 print:text-[11.5px] print:leading-snug print:text-black">
@@ -482,9 +481,7 @@ function FuelTransportInvoiceDocument({
   const qrPayload = hasValidPromptPay
     ? generatePromptPayPayload(cleanPp, invoice.total)
     : "";
-  const qrImageUrl = qrPayload
-    ? `https://chart.googleapis.com/chart?cht=qr&chs=180x180&chl=${encodeURIComponent(qrPayload)}`
-    : "";
+  const qrImageUrl = qrPayload ? generateQrSvgDataUrl(qrPayload) : "";
 
   return (
     <article className="mx-auto w-full max-w-[210mm] bg-white p-3 text-[10.5px] leading-tight text-black print:max-w-none print:p-0">
@@ -978,6 +975,31 @@ function crc16xmodem(data: string, crc = 0xffff): number {
     }
   }
   return crc;
+}
+
+function generateQrSvgDataUrl(payload: string) {
+  const qr = QRCode.create(payload, { errorCorrectionLevel: "M" });
+  const margin = 2;
+  const size = qr.modules.size;
+  const viewBoxSize = size + margin * 2;
+  const darkModules: string[] = [];
+
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      if (qr.modules.get(row, col)) {
+        darkModules.push(`M${col + margin} ${row + margin}h1v1h-1z`);
+      }
+    }
+  }
+
+  const svg = [
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${viewBoxSize} ${viewBoxSize}" shape-rendering="crispEdges">`,
+    `<rect width="${viewBoxSize}" height="${viewBoxSize}" fill="#fff"/>`,
+    `<path d="${darkModules.join("")}" fill="#000"/>`,
+    "</svg>",
+  ].join("");
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
 function generatePromptPayPayload(target: string, amount?: number): string {
