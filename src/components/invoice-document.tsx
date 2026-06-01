@@ -470,7 +470,7 @@ function FuelTransportInvoiceDocument({
   const currentMonthLabel = cycle?.label ?? formatInvoiceDate(invoice.issueDate);
   const detailRows = sortedItems;
   const detailBlankRows = Array.from({
-    length: Math.max(31 - detailRows.length, 0),
+    length: 3,
   });
   const carryoverBlankRows = Array.from({
     length: Math.max(6 - invoice.carryovers.length, 0),
@@ -520,29 +520,43 @@ function FuelTransportInvoiceDocument({
           </div>
         </header>
 
-        <section className="grid grid-cols-[minmax(0,1fr)_62mm] gap-2">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="border border-black">
-              <p className="border-b border-black bg-neutral-100 px-2 py-1 text-[10.5px] font-bold">
-                ลูกค้า / ผู้รับใบแจ้งหนี้
-              </p>
-              <div className="p-2">
-                <p className="text-[25px] font-bold leading-none">{tenant.name}</p>
-                <div className="mt-1 space-y-0.5">
-                  {tenantLines.length ? tenantLines.map((line) => <p key={line}>{line}</p>) : <p>-</p>}
-                  {tenant.taxId ? <p>เลขประจำตัวผู้เสียภาษี {tenant.taxId}</p> : null}
-                </div>
+        <section className="grid grid-cols-[55mm_minmax(0,1fr)_62mm] gap-2">
+          <div className="border border-black">
+            <p className="border-b border-black bg-neutral-100 px-2 py-1 text-[10.5px] font-bold">
+              ลูกค้า / ผู้รับใบแจ้งหนี้
+            </p>
+            <div className="p-2">
+              <p className="text-[25px] font-bold leading-none">{tenant.name}</p>
+              <div className="mt-1 space-y-0.5">
+                {tenantLines.length ? tenantLines.map((line) => <p key={line}>{line}</p>) : <p>-</p>}
+                {tenant.taxId ? <p>เลขประจำตัวผู้เสียภาษี {tenant.taxId}</p> : null}
               </div>
             </div>
-            <div className="border border-black">
-              <p className="border-b border-black bg-neutral-100 px-2 py-1 text-[10.5px] font-bold">
-                ชำระเงิน
-              </p>
-              <div className="p-2 leading-tight">
+          </div>
+          <div className="border border-black">
+            <p className="border-b border-black bg-neutral-100 px-2 py-1 text-[10.5px] font-bold">
+              ชำระเงิน
+            </p>
+            <div className="grid grid-cols-[minmax(0,1fr)_19mm] gap-2 p-2 leading-tight">
+              <div className="min-w-0">
                 <p className="text-[17px] font-bold">บัญชี {issuer.bankAccountNumber || "-"}</p>
                 <p className="mt-1 text-[13px] font-semibold">ชื่อบัญชี {issuer.bankAccountName || "-"}</p>
                 <p className="text-[13px]">ธนาคาร {issuer.bankName || "-"} {issuer.bankBranch || ""}</p>
                 <p className="text-[13px]">Line ID {issuer.paymentLineId || "-"}</p>
+              </div>
+              <div className="grid justify-items-center text-center">
+                {qrImageUrl ? (
+                  <img
+                    src={qrImageUrl}
+                    alt=""
+                    className="h-[17mm] w-[17mm] border border-neutral-300 bg-white object-contain"
+                  />
+                ) : (
+                  <div className="grid h-[17mm] w-[17mm] place-items-center border border-neutral-300 bg-white text-[8px] font-bold">
+                    QR
+                  </div>
+                )}
+                <p className="mt-1 text-[7px] font-semibold leading-none">PromptPay</p>
               </div>
             </div>
           </div>
@@ -551,23 +565,6 @@ function FuelTransportInvoiceDocument({
               <p className="text-[13px] font-bold leading-none">ยอดต้องจ่าย</p>
               <p className="mt-2 text-[32px] font-bold leading-none tabular-nums">{formatMoney(invoice.total)}</p>
               <p className="mt-2 text-[12px] leading-tight">{thaiBahtText(invoice.total)}</p>
-            </div>
-            <div className="flex items-center gap-2 border-t border-black bg-neutral-50 p-1.5">
-              {qrImageUrl ? (
-                <img
-                  src={qrImageUrl}
-                  alt=""
-                  className="h-[14mm] w-[14mm] border border-neutral-300 bg-white object-contain"
-                />
-              ) : (
-                <div className="grid h-[14mm] w-[14mm] place-items-center border border-neutral-300 bg-white text-[8px] font-bold">
-                  QR
-                </div>
-              )}
-              <div className="text-left">
-                <p className="text-[8px] font-semibold leading-none">PromptPay</p>
-                <p className="mt-1 text-[8px] leading-none">สแกนจ่าย</p>
-              </div>
             </div>
           </div>
         </section>
