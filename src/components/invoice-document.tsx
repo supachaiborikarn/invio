@@ -525,7 +525,7 @@ function FuelTransportInvoiceDocument({
                 ลูกค้า / ผู้รับใบแจ้งหนี้
               </p>
               <div className="p-2">
-                <p className="text-[22px] font-bold leading-none">{tenant.name}</p>
+                <p className="text-[25px] font-bold leading-none">{tenant.name}</p>
                 <div className="mt-1 space-y-0.5">
                   {tenantLines.length ? tenantLines.map((line) => <p key={line}>{line}</p>) : <p>-</p>}
                   {tenant.taxId ? <p>เลขประจำตัวผู้เสียภาษี {tenant.taxId}</p> : null}
