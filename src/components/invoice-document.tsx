@@ -487,38 +487,40 @@ function FuelTransportInvoiceDocument({
     : "";
 
   return (
-    <article className="mx-auto w-full max-w-[297mm] bg-white p-3 text-[10.5px] leading-tight text-black print:max-w-none print:p-0">
+    <article className="mx-auto w-full max-w-[210mm] bg-white p-3 text-[10.5px] leading-tight text-black print:max-w-none print:p-0">
       <style>
-        {"@media print { @page { size: A4 landscape; margin: 5mm; } .fuel-print-sheet { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }"}
+        {"@media print { @page { size: A4 portrait; margin: 5mm; } .fuel-print-sheet { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }"}
       </style>
-      <section className="fuel-print-sheet mx-auto grid min-h-[198mm] w-[286mm] max-w-full grid-rows-[auto_auto_1fr_auto] gap-2 border-[1.5px] border-black bg-white p-4 print:min-h-[200mm] print:w-full print:gap-1.5 print:p-2">
-        <header className="grid grid-cols-[100mm_minmax(0,1fr)_64mm] gap-4 border-b-2 border-black pb-3">
-          <div className="min-w-0">
-            <h1 className="text-[30px] font-bold leading-none tracking-normal">{issuer.name}</h1>
-            <div className="mt-2.5 space-y-0.5 text-[10px] leading-tight">
-              {issuerLines.map((line) => (
-                <p key={line}>{line}</p>
-              ))}
-              {issuer.taxId ? <p>เลขประจำตัวผู้เสียภาษี {issuer.taxId}</p> : null}
-              <p>โทร {issuer.phone || "-"} {issuer.email ? `อีเมล ${issuer.email}` : ""}</p>
+      <section className="fuel-print-sheet mx-auto flex min-h-[287mm] w-[200mm] max-w-full flex-col gap-2 border-[1.5px] border-black bg-white p-4 print:min-h-[287mm] print:w-full print:gap-1.5 print:p-2.5">
+        <header className="border-b-2 border-black pb-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_58mm] gap-3">
+            <div className="min-w-0">
+              <h1 className="text-[27px] font-bold leading-none tracking-normal">{issuer.name}</h1>
+              <div className="mt-2 space-y-0.5 text-[9.5px] leading-tight">
+                {issuerLines.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+                {issuer.taxId ? <p>เลขประจำตัวผู้เสียภาษี {issuer.taxId}</p> : null}
+                <p>โทร {issuer.phone || "-"} {issuer.email ? `อีเมล ${issuer.email}` : ""}</p>
+              </div>
+            </div>
+            <div className="grid content-start gap-1 border border-black bg-neutral-50 p-2 text-[10px]">
+              <DocMeta label="เลขที่เอกสาร" value={invoice.invoiceNo} />
+              <DocMeta label="วันที่ออก" value={formatInvoiceDate(invoice.issueDate)} />
+              <DocMeta label="ครบกำหนด" value={formatInvoiceDate(invoice.dueDate)} />
+              <DocMeta label="สถานะ" value={invoiceStatusText(invoice.status)} />
             </div>
           </div>
-          <div className="flex min-w-0 flex-col items-center justify-center text-center">
-            <p className="text-[10.5px] font-semibold text-neutral-600">เอกสารเรียกเก็บเงิน</p>
+          <div className="mt-2 text-center">
+            <p className="text-[10px] font-semibold text-neutral-600">เอกสารเรียกเก็บเงิน</p>
             <h2 className="mt-1 text-[24px] font-bold leading-none">ใบแจ้งหนี้ค่าขนส่งน้ำมัน</h2>
-            <p className="mt-2 rounded-sm bg-neutral-100 px-5 py-1 text-[22px] font-bold leading-none">
+            <p className="mx-auto mt-2 w-fit rounded-sm bg-neutral-100 px-5 py-1 text-[21px] font-bold leading-none">
               {currentMonthLabel}
             </p>
           </div>
-          <div className="grid content-start gap-1 border border-black bg-neutral-50 p-2 text-[10px]">
-            <DocMeta label="เลขที่เอกสาร" value={invoice.invoiceNo} />
-            <DocMeta label="วันที่ออก" value={formatInvoiceDate(invoice.issueDate)} />
-            <DocMeta label="ครบกำหนด" value={formatInvoiceDate(invoice.dueDate)} />
-            <DocMeta label="สถานะ" value={invoiceStatusText(invoice.status)} />
-          </div>
         </header>
 
-        <section className="grid grid-cols-[minmax(0,1fr)_94mm] gap-3">
+        <section className="grid grid-cols-[minmax(0,1fr)_62mm] gap-2">
           <div className="grid grid-cols-2 gap-2">
             <div className="border border-black">
               <p className="border-b border-black bg-neutral-100 px-2 py-1 text-[10.5px] font-bold">
@@ -544,30 +546,33 @@ function FuelTransportInvoiceDocument({
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-[1fr_21mm] border-2 border-black">
-            <div className="min-w-0 p-2.5">
-              <p className="text-[15px] font-bold leading-none">ยอดต้องจ่าย</p>
-              <p className="mt-2 text-[39px] font-bold leading-none tabular-nums">{formatMoney(invoice.total)}</p>
-              <p className="mt-2 text-[15px] leading-tight">{thaiBahtText(invoice.total)}</p>
+          <div className="border-2 border-black">
+            <div className="min-w-0 p-2">
+              <p className="text-[13px] font-bold leading-none">ยอดต้องจ่าย</p>
+              <p className="mt-2 text-[32px] font-bold leading-none tabular-nums">{formatMoney(invoice.total)}</p>
+              <p className="mt-2 text-[12px] leading-tight">{thaiBahtText(invoice.total)}</p>
             </div>
-            <div className="grid place-items-center border-l border-black bg-neutral-50 p-1.5 text-center">
+            <div className="flex items-center gap-2 border-t border-black bg-neutral-50 p-1.5">
               {qrImageUrl ? (
                 <img
                   src={qrImageUrl}
                   alt=""
-                  className="h-[18mm] w-[18mm] border border-neutral-300 bg-white object-contain"
+                  className="h-[14mm] w-[14mm] border border-neutral-300 bg-white object-contain"
                 />
               ) : (
-                <div className="grid h-[18mm] w-[18mm] place-items-center border border-neutral-300 bg-white text-[8px] font-bold">
+                <div className="grid h-[14mm] w-[14mm] place-items-center border border-neutral-300 bg-white text-[8px] font-bold">
                   QR
                 </div>
               )}
-              <p className="mt-1 text-[8px] font-semibold leading-none">PromptPay</p>
+              <div className="text-left">
+                <p className="text-[8px] font-semibold leading-none">PromptPay</p>
+                <p className="mt-1 text-[8px] leading-none">สแกนจ่าย</p>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="grid grid-cols-[128mm_minmax(0,1fr)] gap-3">
+        <section className="grid grid-cols-[minmax(0,1fr)_58mm] gap-2">
           <div className="grid content-start gap-2">
             <table className="w-full table-fixed border-collapse text-[10px]">
               <colgroup>
@@ -609,85 +614,85 @@ function FuelTransportInvoiceDocument({
                 </tr>
               </tbody>
             </table>
-
-            <div className="grid grid-cols-[0.82fr_1.09fr_1.09fr] gap-1.5 text-center">
-              <FuelTotalBox label="ยอดค้างเก่า" value={carryoverTotal} />
-              <FuelTotalBox label="ยอดเดือนนี้" value={currentTotal} />
-              <FuelTotalBox label="ยอดต้องจ่าย" value={invoice.total} strong />
-            </div>
-
-            <div className="grid grid-cols-[1fr_28mm] gap-2">
-              <div className="border border-black">
-                <p className="border-b border-black bg-neutral-100 px-2 py-1 text-[10.5px] font-bold">
-                  หมายเหตุ
-                </p>
-                <div className="p-2 text-[15px] leading-tight">
-                  <p>{invoice.notes || "-"}</p>
-                  <p className="mt-1">
-                    ยอดค้างเก่า {includedCarryoverTotal > 0 ? "รวมในยอดต้องจ่าย" : "แสดงแยก"}
-                  </p>
-                </div>
-              </div>
-              <div className="border border-black p-2 text-center">
-                <div className="mx-auto mt-7 h-8 w-24 border-b border-black" />
-                <p className="mt-1 font-semibold">ผู้วางบิล</p>
-              </div>
-            </div>
           </div>
 
-          <table className="w-full table-fixed border-collapse text-[9px]">
-            <colgroup>
-              <col className="w-[8%]" />
-              <col className="w-[16%]" />
-              <col className="w-[42%]" />
-              <col className="w-[13%]" />
-              <col className="w-[10%]" />
-              <col className="w-[11%]" />
-            </colgroup>
-            <thead>
-              <tr>
-                <FuelHead>ลำดับ</FuelHead>
-                <FuelHead>วันที่</FuelHead>
-                <FuelHead>รายการ</FuelHead>
-                <FuelHead align="right">ลิตร</FuelHead>
-                <FuelHead align="right">บาท/ลิตร</FuelHead>
-                <FuelHead align="right">เงิน</FuelHead>
-              </tr>
-            </thead>
-            <tbody>
-              {detailRows.map((item, index) => (
-                <tr key={item.id}>
-                  <FuelCell align="center">{index + 1}</FuelCell>
-                  <FuelCell>{formatCompactDate(item.serviceDate)}</FuelCell>
-                  <FuelCell>{item.tripLabel || item.description}</FuelCell>
-                  <FuelCell align="right">{formatNumber(item.quantity)}</FuelCell>
-                  <FuelCell align="right">{formatUnitPrice(item.unitPrice)}</FuelCell>
-                  <FuelCell align="right" strong>{formatMoney(item.amount)}</FuelCell>
-                </tr>
-              ))}
-              {detailBlankRows.map((_, index) => (
-                <tr key={`detail-blank-${index}`}>
-                  <FuelCell align="center">{detailRows.length + index + 1}</FuelCell>
-                  <FuelCell>&nbsp;</FuelCell>
-                  <FuelCell>&nbsp;</FuelCell>
-                  <FuelCell>&nbsp;</FuelCell>
-                  <FuelCell>&nbsp;</FuelCell>
-                  <FuelCell>&nbsp;</FuelCell>
-                </tr>
-              ))}
-              <tr>
-                <FuelCell>&nbsp;</FuelCell>
-                <FuelCell>&nbsp;</FuelCell>
-                <FuelCell strong>รวมเดือนนี้</FuelCell>
-                <FuelCell align="right" strong>{formatNumber(litersTotal)}</FuelCell>
-                <FuelCell>&nbsp;</FuelCell>
-                <FuelCell align="right" strong>{formatMoney(invoice.subtotal)}</FuelCell>
-              </tr>
-            </tbody>
-          </table>
+          <div className="grid content-start gap-1.5 text-center">
+            <FuelTotalBox label="ยอดค้างเก่า" value={carryoverTotal} />
+            <FuelTotalBox label="ยอดเดือนนี้" value={currentTotal} />
+            <FuelTotalBox label="ยอดต้องจ่าย" value={invoice.total} strong />
+          </div>
         </section>
 
-        <footer className="grid grid-cols-[minmax(0,1fr)_44mm] gap-3 text-[9px]">
+        <section className="grid grid-cols-[minmax(0,1fr)_30mm] gap-2">
+          <div className="border border-black">
+            <p className="border-b border-black bg-neutral-100 px-2 py-1 text-[10.5px] font-bold">
+              หมายเหตุ
+            </p>
+            <div className="p-2 text-[13px] leading-tight">
+              <p>{invoice.notes || "-"}</p>
+              <p className="mt-1">
+                ยอดค้างเก่า {includedCarryoverTotal > 0 ? "รวมในยอดต้องจ่าย" : "แสดงแยก"}
+              </p>
+            </div>
+          </div>
+          <div className="border border-black p-2 text-center">
+            <div className="mx-auto mt-5 h-8 w-24 border-b border-black" />
+            <p className="mt-1 font-semibold">ผู้วางบิล</p>
+          </div>
+        </section>
+
+        <table className="w-full table-fixed border-collapse text-[9px]">
+          <colgroup>
+            <col className="w-[8%]" />
+            <col className="w-[16%]" />
+            <col className="w-[42%]" />
+            <col className="w-[13%]" />
+            <col className="w-[10%]" />
+            <col className="w-[11%]" />
+          </colgroup>
+          <thead>
+            <tr>
+              <FuelHead>ลำดับ</FuelHead>
+              <FuelHead>วันที่</FuelHead>
+              <FuelHead>รายการ</FuelHead>
+              <FuelHead align="right">ลิตร</FuelHead>
+              <FuelHead align="right">บาท/ลิตร</FuelHead>
+              <FuelHead align="right">เงิน</FuelHead>
+            </tr>
+          </thead>
+          <tbody>
+            {detailRows.map((item, index) => (
+              <tr key={item.id}>
+                <FuelCell align="center">{index + 1}</FuelCell>
+                <FuelCell>{formatCompactDate(item.serviceDate)}</FuelCell>
+                <FuelCell>{item.tripLabel || item.description}</FuelCell>
+                <FuelCell align="right">{formatNumber(item.quantity)}</FuelCell>
+                <FuelCell align="right">{formatUnitPrice(item.unitPrice)}</FuelCell>
+                <FuelCell align="right" strong>{formatMoney(item.amount)}</FuelCell>
+              </tr>
+            ))}
+            {detailBlankRows.map((_, index) => (
+              <tr key={`detail-blank-${index}`}>
+                <FuelCell align="center">{detailRows.length + index + 1}</FuelCell>
+                <FuelCell>&nbsp;</FuelCell>
+                <FuelCell>&nbsp;</FuelCell>
+                <FuelCell>&nbsp;</FuelCell>
+                <FuelCell>&nbsp;</FuelCell>
+                <FuelCell>&nbsp;</FuelCell>
+              </tr>
+            ))}
+            <tr>
+              <FuelCell>&nbsp;</FuelCell>
+              <FuelCell>&nbsp;</FuelCell>
+              <FuelCell strong>รวมเดือนนี้</FuelCell>
+              <FuelCell align="right" strong>{formatNumber(litersTotal)}</FuelCell>
+              <FuelCell>&nbsp;</FuelCell>
+              <FuelCell align="right" strong>{formatMoney(invoice.subtotal)}</FuelCell>
+            </tr>
+          </tbody>
+        </table>
+
+        <footer className="mt-auto grid grid-cols-[minmax(0,1fr)_44mm] gap-3 text-[9px]">
           <p>กรุณาระบุเลขที่เอกสาร {invoice.invoiceNo} เมื่อชำระเงิน</p>
           <p className="text-right">วันที่พิมพ์ {formatCompactDate(new Date().toISOString())}</p>
         </footer>

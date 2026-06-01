@@ -68,6 +68,7 @@ import {
   today,
   createFuelCarryoverRow,
   createFuelTripRow,
+  getDefaultFuelTransportUnitPrice,
   normalizeFuelCarryoverRows,
   normalizeFuelTripRows,
   createInvoiceEditRow,
@@ -798,7 +799,8 @@ function FuelTransportInvoiceDialog({
   activeCycle: DashboardData["cycles"][number];
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
-  const [tenantId, setTenantId] = useState(data.tenants[0]?.id ?? "");
+  const initialTenantId = data.tenants[0]?.id ?? "";
+  const [tenantId, setTenantId] = useState(initialTenantId);
   const defaultIssuer =
     data.issuerProfiles.find((profile) => profile.isDefault && profile.active) ??
     data.issuerProfiles.find((profile) => profile.active) ??
@@ -807,7 +809,11 @@ function FuelTransportInvoiceDialog({
   const [carryoverMode, setCarryoverMode] = useState<"include" | "display">("include");
   const defaultTripDate = activeCycle.periodStart.slice(0, 10);
   const [tripRows, setTripRows] = useState<FuelTripFormRow[]>(() => [
-    createFuelTripRow(defaultTripDate, 0),
+    createFuelTripRow(
+      defaultTripDate,
+      0,
+      getDefaultFuelTransportUnitPrice(getTenant(data, initialTenantId)),
+    ),
   ]);
   const createAutoCarryovers = (nextTenantId: string) =>
     data.invoices
@@ -833,6 +839,7 @@ function FuelTransportInvoiceDialog({
     createAutoCarryovers(data.tenants[0]?.id ?? ""),
   );
   const tenant = getTenant(data, tenantId);
+  const defaultFuelUnitPrice = getDefaultFuelTransportUnitPrice(tenant);
   const normalizedTrips = useMemo(
     () => normalizeFuelTripRows(tripRows),
     [tripRows],
@@ -855,7 +862,21 @@ function FuelTransportInvoiceDialog({
   const carryoversJson = JSON.stringify(normalizedCarryovers);
 
   const updateTenant = (nextTenantId: string) => {
+    const currentDefaultUnitPrice = getDefaultFuelTransportUnitPrice(
+      getTenant(data, tenantId),
+    );
+    const nextDefaultUnitPrice = getDefaultFuelTransportUnitPrice(
+      getTenant(data, nextTenantId),
+    );
+
     setTenantId(nextTenantId);
+    setTripRows((current) =>
+      current.map((row) =>
+        row.unitPrice === "" || row.unitPrice === currentDefaultUnitPrice
+          ? { ...row, unitPrice: nextDefaultUnitPrice }
+          : row,
+      ),
+    );
     setCarryoverRows(createAutoCarryovers(nextTenantId));
   };
 
@@ -874,7 +895,7 @@ function FuelTransportInvoiceDialog({
   const addTripRow = () => {
     setTripRows((current) => [
       ...current,
-      createFuelTripRow(defaultTripDate, current.length),
+      createFuelTripRow(defaultTripDate, current.length, defaultFuelUnitPrice),
     ]);
   };
 

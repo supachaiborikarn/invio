@@ -215,13 +215,28 @@ export const sampleTenantsForDemo: Tenant[] = [
   },
 ];
 
-export function createFuelTripRow(defaultDate: string, index: number): FuelTripFormRow {
+export function getDefaultFuelTransportUnitPrice(
+  tenant?: Pick<Tenant, "code" | "name"> | null,
+) {
+  const code = tenant?.code.toUpperCase();
+  const name = tenant?.name ?? "";
+
+  if (code === "TAIFAH" || name.includes("ใต้ฟ้า")) return "0.29";
+  if (code === "DAOPAISAAN" || name.includes("ดาวไพศาล")) return "0.21";
+  return "0.21";
+}
+
+export function createFuelTripRow(
+  defaultDate: string,
+  index: number,
+  unitPrice = "0.21",
+): FuelTripFormRow {
   return {
     id: createId("fuel-trip"),
     date: defaultDate,
     label: `รอบวิ่ง ${index + 1}`,
     quantity: "",
-    unitPrice: "0.21",
+    unitPrice,
   };
 }
 
