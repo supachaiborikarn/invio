@@ -373,6 +373,9 @@ export function BillingWorkspace({
       invoiceType === "fuel_transport"
         ? fuelCarryoversFromJson(field(form, "carryoversJson"))
         : [];
+    const issuerProfile =
+      data.issuerProfiles.find((profile) => profile.id === field(form, "issuerProfileId")) ??
+      defaultIssuerProfile;
     const includedCarryoverTotal = carryovers
       .filter((item) => item.includedInTotal)
       .reduce((sum, item) => sum + item.amount, 0);
@@ -401,7 +404,7 @@ export function BillingWorkspace({
       items,
       discount: amountField(form, "discount"),
       vatEnabled: field(form, "vatEnabled") === "yes",
-      vatRate: data.organization.vatRate,
+      vatRate: issuerProfile?.vatRate ?? data.organization.vatRate,
     });
     const totalsWithCarryover = {
       ...totalsForInvoice,
@@ -412,7 +415,7 @@ export function BillingWorkspace({
       id: createId("invoice"),
       tenantId,
       cycleId: activeCycle.id,
-      issuerProfileId: field(form, "issuerProfileId") || defaultIssuerProfile?.id,
+      issuerProfileId: issuerProfile?.id,
       invoiceNo: nextRunningNo("INV-256905", data.invoices.length),
       type: invoiceType,
       issueDate: today(),
@@ -453,11 +456,15 @@ export function BillingWorkspace({
         invoices: current.invoices.map((invoice) => {
           if (invoice.id !== invoiceId) return invoice;
 
+          const selectedIssuerProfile =
+            current.issuerProfiles.find((profile) => profile.id === field(formData, "issuerProfileId")) ??
+            current.issuerProfiles.find((profile) => profile.id === invoice.issuerProfileId) ??
+            defaultIssuerProfile;
           const totalsForInvoice = calculateInvoiceTotals({
             items,
             discount: amountField(formData, "discount"),
             vatEnabled: field(formData, "vatEnabled") === "yes",
-            vatRate: data.organization.vatRate,
+            vatRate: selectedIssuerProfile?.vatRate ?? current.organization.vatRate,
           });
           const dueDate = field(formData, "dueDate") || invoice.dueDate;
           const status = deriveInvoiceStatus({
@@ -470,6 +477,7 @@ export function BillingWorkspace({
           return {
             ...invoice,
             tenantId: field(formData, "tenantId") || invoice.tenantId,
+            issuerProfileId: selectedIssuerProfile?.id,
             dueDate,
             items,
             type: inferInvoiceType(items, invoice.type),

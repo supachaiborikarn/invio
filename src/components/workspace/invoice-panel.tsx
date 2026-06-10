@@ -389,6 +389,20 @@ export function InvoiceList({
   );
 }
 
+function getDefaultIssuerProfile(data: DashboardData) {
+  return (
+    data.issuerProfiles.find((profile) => profile.isDefault && profile.active) ??
+    data.issuerProfiles.find((profile) => profile.active) ??
+    data.issuerProfiles[0]
+  );
+}
+
+function getSelectableIssuerProfiles(data: DashboardData, currentIssuerProfileId?: string) {
+  return data.issuerProfiles.filter(
+    (profile) => profile.active || profile.id === currentIssuerProfileId,
+  );
+}
+
 function VoidInvoiceButton({
   invoice,
   onVoidInvoice,
@@ -498,12 +512,16 @@ function InvoiceEditDialog({
   onUpdateInvoice: (formData: FormData) => Promise<boolean>;
 }) {
   const [tenantId, setTenantId] = useState(invoice.tenantId);
+  const [issuerProfileId, setIssuerProfileId] = useState(
+    invoice.issuerProfileId ?? getDefaultIssuerProfile(data)?.id ?? "",
+  );
   const [vatEnabled, setVatEnabled] = useState(invoice.vatEnabled ? "yes" : "no");
   const [rows, setRows] = useState<InvoiceEditFormRow[]>(() =>
     invoice.items.length
       ? invoice.items.map((item) => createInvoiceEditRow(item))
       : [createInvoiceEditRow()],
   );
+  const issuerOptions = getSelectableIssuerProfiles(data, issuerProfileId);
   
   const normalizedRows = useMemo(() => normalizeInvoiceEditRows(rows), [rows]);
   const itemsJson = JSON.stringify(normalizedRows);
@@ -550,22 +568,43 @@ function InvoiceEditDialog({
         <input type="hidden" name="invoiceId" value={invoice.id} />
         <input type="hidden" name="itemsJson" value={itemsJson} />
         <div className="grid gap-3">
-          <div className="grid min-w-0 gap-2">
-            <Label>ผู้ถูกเรียกเก็บ</Label>
-            <Select name="tenantId" value={tenantId} onValueChange={setTenantId}>
-              <SelectTrigger className="w-full min-w-0 [&_[data-slot=select-value]]:block [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:truncate">
-                <SelectValue placeholder="เลือกผู้ถูกเรียกเก็บ" />
-              </SelectTrigger>
-              <SelectContent className="max-w-[calc(100vw-3rem)]">
-                {data.tenants.map((tenant) => (
-                  <SelectItem key={tenant.id} value={tenant.id}>
-                    <span className="block max-w-[32rem] truncate">
-                      {tenant.code} · {tenant.name}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid min-w-0 gap-2">
+              <Label>ผู้ถูกเรียกเก็บ</Label>
+              <Select name="tenantId" value={tenantId} onValueChange={setTenantId}>
+                <SelectTrigger className="w-full min-w-0 [&_[data-slot=select-value]]:block [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:truncate">
+                  <SelectValue placeholder="เลือกผู้ถูกเรียกเก็บ" />
+                </SelectTrigger>
+                <SelectContent className="max-w-[calc(100vw-3rem)]">
+                  {data.tenants.map((tenant) => (
+                    <SelectItem key={tenant.id} value={tenant.id}>
+                      <span className="block max-w-[32rem] truncate">
+                        {tenant.code} · {tenant.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid min-w-0 gap-2">
+              <Label>หัวเอกสาร</Label>
+              <Select
+                name="issuerProfileId"
+                value={issuerProfileId}
+                onValueChange={setIssuerProfileId}
+              >
+                <SelectTrigger className="w-full min-w-0 [&_[data-slot=select-value]]:block [&_[data-slot=select-value]]:truncate">
+                  <SelectValue placeholder="เลือกหัวเอกสาร" />
+                </SelectTrigger>
+                <SelectContent>
+                  {issuerOptions.map((profile) => (
+                    <SelectItem key={profile.id} value={profile.id}>
+                      {profile.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
             <Field
@@ -718,8 +757,12 @@ function RentInvoiceDialog({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const [unitId, setUnitId] = useState(data.units[0]?.id ?? "");
+  const [issuerProfileId, setIssuerProfileId] = useState(
+    getDefaultIssuerProfile(data)?.id ?? "",
+  );
   const unit = getUnit(data, unitId);
   const tenant = unit ? getTenant(data, unit.tenantId) : undefined;
+  const issuerOptions = getSelectableIssuerProfiles(data, issuerProfileId);
 
   return (
     <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
@@ -743,6 +786,25 @@ function RentInvoiceDialog({
                 {data.units.map((item) => (
                   <SelectItem key={item.id} value={item.id}>
                     {item.code} · {getTenant(data, item.tenantId)?.name ?? "-"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid min-w-0 gap-2">
+            <Label>หัวเอกสาร</Label>
+            <Select
+              name="issuerProfileId"
+              value={issuerProfileId}
+              onValueChange={setIssuerProfileId}
+            >
+              <SelectTrigger className="w-full min-w-0 [&_[data-slot=select-value]]:block [&_[data-slot=select-value]]:truncate">
+                <SelectValue placeholder="เลือกหัวเอกสาร" />
+              </SelectTrigger>
+              <SelectContent>
+                {issuerOptions.map((profile) => (
+                  <SelectItem key={profile.id} value={profile.id}>
+                    {profile.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -784,7 +846,7 @@ function RentInvoiceDialog({
             </SelectContent>
           </Select>
         </div>
-        <Button type="submit" className="w-full">ออกใบแจ้งหนี้</Button>
+        <Button type="submit" disabled={!unitId || !issuerProfileId} className="w-full">ออกใบแจ้งหนี้</Button>
       </form>
     </DialogContent>
   );
@@ -801,10 +863,7 @@ function FuelTransportInvoiceDialog({
 }) {
   const initialTenantId = data.tenants[0]?.id ?? "";
   const [tenantId, setTenantId] = useState(initialTenantId);
-  const defaultIssuer =
-    data.issuerProfiles.find((profile) => profile.isDefault && profile.active) ??
-    data.issuerProfiles.find((profile) => profile.active) ??
-    data.issuerProfiles[0];
+  const defaultIssuer = getDefaultIssuerProfile(data);
   const [issuerProfileId, setIssuerProfileId] = useState(defaultIssuer?.id ?? "");
   const [carryoverMode, setCarryoverMode] = useState<"include" | "display">("include");
   const defaultTripDate = activeCycle.periodStart.slice(0, 10);
@@ -990,13 +1049,11 @@ function FuelTransportInvoiceDialog({
                 <SelectValue placeholder="เลือกหัวเอกสาร" />
               </SelectTrigger>
               <SelectContent>
-                {data.issuerProfiles
-                  .filter((profile) => profile.active)
-                  .map((profile) => (
-                    <SelectItem key={profile.id} value={profile.id}>
-                      {profile.name}
-                    </SelectItem>
-                  ))}
+                {getSelectableIssuerProfiles(data, issuerProfileId).map((profile) => (
+                  <SelectItem key={profile.id} value={profile.id}>
+                    {profile.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

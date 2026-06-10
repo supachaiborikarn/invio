@@ -1140,10 +1140,22 @@ export async function createInvoiceForUnitAction(
   const issuerProfileId =
     requestedIssuerProfileId || (await getDefaultIssuerProfileId(organizationId));
   const [issuerProfile] = await db
-    .select({ vatRateBasisPoints: issuerProfiles.vatRateBasisPoints })
+    .select({
+      id: issuerProfiles.id,
+      vatRateBasisPoints: issuerProfiles.vatRateBasisPoints,
+    })
     .from(issuerProfiles)
-    .where(eq(issuerProfiles.id, issuerProfileId))
+    .where(
+      and(
+        eq(issuerProfiles.id, issuerProfileId),
+        eq(issuerProfiles.organizationId, organizationId),
+      ),
+    )
     .limit(1);
+
+  if (!issuerProfile) {
+    return { ok: false, message: "ไม่พบหัวเอกสาร" };
+  }
 
   if (requestedType === "electricity") {
     return {
@@ -1210,7 +1222,7 @@ export async function createInvoiceForUnitAction(
       items,
       discount,
       vatEnabled,
-      vatRate: (issuerProfile?.vatRateBasisPoints ?? 700) / 100,
+      vatRate: issuerProfile.vatRateBasisPoints / 100,
     }),
     carryovers,
   );
@@ -1232,7 +1244,7 @@ export async function createInvoiceForUnitAction(
       organizationId,
       tenantId,
       billingCycleId,
-      issuerProfileId,
+      issuerProfileId: issuerProfile.id,
       invoiceNo,
       type,
       issueDate: new Date(),
@@ -1300,6 +1312,7 @@ export async function updateInvoiceAction(
   const discount = numberValue(formData, "discount");
   const vatEnabled = booleanValue(formData, "vatEnabled");
   const notes = textValue(formData, "notes");
+  const requestedIssuerProfileId = textValue(formData, "issuerProfileId");
   const parsedItems = parseEditableInvoiceItems(textValue(formData, "itemsJson"));
 
   if (!invoiceId || !tenantId || !dueDate) {
@@ -1340,11 +1353,37 @@ export async function updateInvoiceAction(
     return { ok: false, message: "ใบแจ้งหนี้ที่ยกเลิกแล้วแก้ไขไม่ได้" };
   }
 
+  let nextIssuerProfileId = invoice.issuerProfileId;
+  let vatRateBasisPoints = invoice.vatRateBasisPoints;
+
+  if (requestedIssuerProfileId) {
+    const [issuerProfile] = await db
+      .select({
+        id: issuerProfiles.id,
+        vatRateBasisPoints: issuerProfiles.vatRateBasisPoints,
+      })
+      .from(issuerProfiles)
+      .where(
+        and(
+          eq(issuerProfiles.id, requestedIssuerProfileId),
+          eq(issuerProfiles.organizationId, organizationId),
+        ),
+      )
+      .limit(1);
+
+    if (!issuerProfile) {
+      return { ok: false, message: "ไม่พบหัวเอกสาร" };
+    }
+
+    nextIssuerProfileId = issuerProfile.id;
+    vatRateBasisPoints = issuerProfile.vatRateBasisPoints;
+  }
+
   const totals = calculateInvoiceTotals({
     items: parsedItems.items,
     discount,
     vatEnabled,
-    vatRate: invoice.vatRateBasisPoints / 100,
+    vatRate: vatRateBasisPoints / 100,
   });
   const existingCarryovers = await db
     .select()
@@ -1380,6 +1419,7 @@ export async function updateInvoiceAction(
     .update(invoices)
     .set({
       tenantId,
+      issuerProfileId: nextIssuerProfileId,
       type: nextType,
       dueDate: newDueDate,
       subtotalSatang: toSatang(totalsWithCarryovers.subtotal),
