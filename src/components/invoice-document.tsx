@@ -490,10 +490,10 @@ function FuelTransportInvoiceDocument({
       </style>
       <section className="fuel-print-sheet mx-auto flex min-h-[287mm] w-[200mm] max-w-full flex-col gap-2 border-[1.5px] border-black bg-white p-4 print:min-h-[287mm] print:w-full print:gap-1.5 print:p-2.5">
         <header className="border-b-2 border-black pb-2">
-          <div className="grid grid-cols-[minmax(0,1fr)_58mm] gap-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_62mm] gap-2">
             <div className="min-w-0">
               <h1 className="text-[27px] font-bold leading-none tracking-normal">{issuer.name}</h1>
-              <div className="mt-2 space-y-0.5 text-[9.5px] leading-tight">
+              <div className="mt-2 space-y-0.5 text-[11px] leading-snug">
                 {issuerLines.map((line) => (
                   <p key={line}>{line}</p>
                 ))}
@@ -501,11 +501,11 @@ function FuelTransportInvoiceDocument({
                 <p>โทร {issuer.phone || "-"} {issuer.email ? `อีเมล ${issuer.email}` : ""}</p>
               </div>
             </div>
-            <div className="grid content-start gap-1 border border-black bg-neutral-50 p-2 text-[10px]">
-              <DocMeta label="เลขที่เอกสาร" value={invoice.invoiceNo} />
-              <DocMeta label="วันที่ออก" value={formatInvoiceDate(invoice.issueDate)} />
-              <DocMeta label="ครบกำหนด" value={formatInvoiceDate(invoice.dueDate)} />
-              <DocMeta label="สถานะ" value={invoiceStatusText(invoice.status)} />
+            <div className="grid content-start gap-1.5 border border-black bg-neutral-50 p-2.5">
+              <DocMeta label="เลขที่เอกสาร" value={invoice.invoiceNo} large />
+              <DocMeta label="วันที่ออก" value={formatInvoiceDate(invoice.issueDate)} large />
+              <DocMeta label="ครบกำหนด" value={formatInvoiceDate(invoice.dueDate)} large />
+              <DocMeta label="สถานะ" value={invoiceStatusText(invoice.status)} large />
             </div>
           </div>
           <div className="mt-2 text-center">
@@ -517,13 +517,13 @@ function FuelTransportInvoiceDocument({
           </div>
         </header>
 
-        <section className="grid grid-cols-[55mm_minmax(0,1fr)_62mm] gap-2">
+        <section className="grid grid-cols-[60mm_minmax(0,1fr)_58mm] gap-2">
           <div className="border border-black">
             <p className="border-b border-black bg-neutral-100 px-2 py-1 text-[10.5px] font-bold">
               ลูกค้า / ผู้รับใบแจ้งหนี้
             </p>
-            <div className="p-2">
-              <p className="text-[25px] font-bold leading-none">{tenant.name}</p>
+            <div className="flex min-h-[29mm] flex-col items-center justify-center p-2 text-center">
+              <p className="max-w-full whitespace-nowrap text-[18px] font-bold leading-tight">{tenant.name}</p>
               <div className="mt-1 space-y-0.5">
                 {tenantLines.length ? tenantLines.map((line) => <p key={line}>{line}</p>) : <p>-</p>}
                 {tenant.taxId ? <p>เลขประจำตัวผู้เสียภาษี {tenant.taxId}</p> : null}
@@ -534,9 +534,9 @@ function FuelTransportInvoiceDocument({
             <p className="border-b border-black bg-neutral-100 px-2 py-1 text-[10.5px] font-bold">
               ชำระเงิน
             </p>
-            <div className="grid grid-cols-[minmax(0,1fr)_19mm] gap-2 p-2 leading-tight">
+            <div className="grid grid-cols-[minmax(0,1fr)_17mm] gap-2 p-2 leading-tight">
               <div className="min-w-0">
-                <p className="text-[17px] font-bold">บัญชี {issuer.bankAccountNumber || "-"}</p>
+                <p className="whitespace-nowrap text-[16px] font-bold">บัญชี {issuer.bankAccountNumber || "-"}</p>
                 <p className="mt-1 text-[13px] font-semibold">ชื่อบัญชี {issuer.bankAccountName || "-"}</p>
                 <p className="text-[13px]">ธนาคาร {issuer.bankName || "-"} {issuer.bankBranch || ""}</p>
                 <p className="text-[13px]">Line ID {issuer.paymentLineId || "-"}</p>
@@ -546,10 +546,10 @@ function FuelTransportInvoiceDocument({
                   <img
                     src={qrImageUrl}
                     alt=""
-                    className="h-[17mm] w-[17mm] border border-neutral-300 bg-white object-contain"
+                    className="h-[16mm] w-[16mm] border border-neutral-300 bg-white object-contain"
                   />
                 ) : (
-                  <div className="grid h-[17mm] w-[17mm] place-items-center border border-neutral-300 bg-white text-[8px] font-bold">
+                  <div className="grid h-[16mm] w-[16mm] place-items-center border border-neutral-300 bg-white text-[8px] font-bold">
                     QR
                   </div>
                 )}
@@ -859,13 +859,33 @@ function SignatureBlock({ label }: { label: string }) {
   );
 }
 
-function DocMeta({ label, value }: { label: string; value: string }) {
+function DocMeta({
+  label,
+  value,
+  large = false,
+}: {
+  label: string;
+  value: string;
+  large?: boolean;
+}) {
   return (
-    <div className="flex items-start justify-between gap-3 border-b border-border pb-1 last:border-0 last:pb-0 print:gap-2 print:border-black">
-      <dt className="text-[10px] font-medium text-muted-foreground print:text-[9.5px] print:text-black">
+    <div
+      className={`flex items-start justify-between border-b border-border last:border-0 last:pb-0 print:border-black ${
+        large ? "gap-4 pb-1.5" : "gap-3 pb-1 print:gap-2"
+      }`}
+    >
+      <dt
+        className={`font-medium text-muted-foreground print:text-black ${
+          large ? "text-[11.5px]" : "text-[10px] print:text-[9.5px]"
+        }`}
+      >
         {label}
       </dt>
-      <dd className="text-right text-[11px] font-semibold print:text-[10.5px]">
+      <dd
+        className={`text-right font-semibold ${
+          large ? "text-[12.5px]" : "text-[11px] print:text-[10.5px]"
+        }`}
+      >
         {value}
       </dd>
     </div>
