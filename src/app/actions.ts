@@ -210,11 +210,15 @@ const fuelCarryoversSchema = z.array(
 
 const editableInvoiceItemsSchema = z.array(
   z.object({
+    itemId: z.string().optional(),
     type: z.string(),
     description: z.string(),
     quantity: z.coerce.number(),
     unitPrice: z.coerce.number(),
     meterReadingId: z.string().optional(),
+    serviceDate: z.string().optional(),
+    tripLabel: z.string().optional(),
+    displayOrder: z.coerce.number().optional(),
   }),
 );
 
@@ -386,13 +390,16 @@ function parseEditableInvoiceItems(
       if (!description || unitPrice <= 0) return null;
 
       return {
-        id: `edited-item-${index + 1}`,
+        id: item.itemId || `edited-item-${index + 1}`,
         type,
         description,
         quantity,
         unitPrice,
         amount: quantity * unitPrice,
         meterReadingId: item.meterReadingId || undefined,
+        serviceDate: item.serviceDate || undefined,
+        tripLabel: item.tripLabel || undefined,
+        displayOrder: item.displayOrder ?? index,
       };
     })
     .filter((item): item is InvoiceItem => Boolean(item));
@@ -1314,12 +1321,17 @@ export async function updateInvoiceAction(
   const notes = textValue(formData, "notes");
   const requestedIssuerProfileId = textValue(formData, "issuerProfileId");
   const parsedItems = parseEditableInvoiceItems(textValue(formData, "itemsJson"));
+  const carryoversSubmitted = formData.has("carryoversJson");
+  const parsedCarryovers = carryoversSubmitted
+    ? parseFuelCarryovers(textValue(formData, "carryoversJson"))
+    : null;
 
   if (!invoiceId || !tenantId || !dueDate) {
     return { ok: false, message: "ข้อมูลใบแจ้งหนี้ไม่ครบ" };
   }
 
   if (!parsedItems.ok) return parsedItems;
+  if (parsedCarryovers && !parsedCarryovers.ok) return parsedCarryovers;
 
   const db = getDb();
   const organizationId = await getDefaultOrganizationId();
@@ -1389,9 +1401,8 @@ export async function updateInvoiceAction(
     .select()
     .from(invoiceCarryovers)
     .where(eq(invoiceCarryovers.invoiceId, invoiceId));
-  const totalsWithCarryovers = addCarryoversToTotals(
-    totals,
-    existingCarryovers.map((item, index) => ({
+  const existingCarryoverValues: InvoiceCarryover[] = existingCarryovers.map(
+    (item, index) => ({
       id: item.id,
       invoiceId: item.invoiceId,
       sourceInvoiceId: item.sourceInvoiceId ?? undefined,
@@ -1403,8 +1414,13 @@ export async function updateInvoiceAction(
       amount: item.amountSatang / 100,
       includedInTotal: item.includedInTotal,
       displayOrder: item.displayOrder ?? index,
-    })),
+    }),
   );
+  const nextCarryovers =
+    parsedCarryovers && parsedCarryovers.ok
+      ? parsedCarryovers.carryovers
+      : existingCarryoverValues;
+  const totalsWithCarryovers = addCarryoversToTotals(totals, nextCarryovers);
   const paid = invoice.paidSatang / 100;
   const newDueDate = toDateValue(dueDate);
   const status = deriveInvoiceStatus({
@@ -1450,6 +1466,27 @@ export async function updateInvoiceAction(
       displayOrder: item.displayOrder ?? 0,
     })),
   );
+
+  if (carryoversSubmitted) {
+    await db.delete(invoiceCarryovers).where(eq(invoiceCarryovers.invoiceId, invoiceId));
+
+    if (nextCarryovers.length) {
+      await db.insert(invoiceCarryovers).values(
+        nextCarryovers.map((item) => ({
+          invoiceId,
+          sourceInvoiceId: item.sourceInvoiceId,
+          sourceInvoiceNo: item.sourceInvoiceNo ?? "",
+          label: item.label,
+          periodLabel: item.periodLabel,
+          quantity: item.quantity,
+          unitPriceSatang: toSatang(item.unitPrice),
+          amountSatang: toSatang(item.amount),
+          includedInTotal: item.includedInTotal,
+          displayOrder: item.displayOrder,
+        })),
+      );
+    }
+  }
 
   await db.insert(invoiceAuditLogs).values({
     organizationId,

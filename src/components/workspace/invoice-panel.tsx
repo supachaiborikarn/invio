@@ -521,10 +521,29 @@ function InvoiceEditDialog({
       ? invoice.items.map((item) => createInvoiceEditRow(item))
       : [createInvoiceEditRow()],
   );
+  const [carryoverMode, setCarryoverMode] = useState<"include" | "display">(
+    invoice.carryovers.some((row) => row.includedInTotal) ? "include" : "display",
+  );
+  const [carryoverRows, setCarryoverRows] = useState<FuelCarryoverFormRow[]>(() =>
+    invoice.carryovers.map((row, index) =>
+      createFuelCarryoverRow(index, {
+        sourceInvoiceId: row.sourceInvoiceId,
+        sourceInvoiceNo: row.sourceInvoiceNo,
+        label: row.label,
+        periodLabel: row.periodLabel,
+        quantity: row.quantity ? String(row.quantity) : "",
+        unitPrice: row.unitPrice ? String(row.unitPrice) : "",
+        amount: String(row.amount),
+      }),
+    ),
+  );
   const issuerOptions = getSelectableIssuerProfiles(data, issuerProfileId);
   
   const normalizedRows = useMemo(() => normalizeInvoiceEditRows(rows), [rows]);
   const itemsJson = JSON.stringify(normalizedRows);
+  const carryoversJson = JSON.stringify(
+    normalizeFuelCarryoverRows(carryoverRows, carryoverMode === "include"),
+  );
   const subtotal = normalizedRows.reduce(
     (sum, row) => sum + row.quantity * row.unitPrice,
     0,
@@ -532,7 +551,10 @@ function InvoiceEditDialog({
 
   function updateRow(
     rowId: string,
-    key: keyof Omit<InvoiceEditFormRow, "id" | "itemId" | "meterReadingId">,
+    key: keyof Omit<
+      InvoiceEditFormRow,
+      "id" | "itemId" | "meterReadingId" | "serviceDate" | "tripLabel" | "displayOrder"
+    >,
     value: string,
   ) {
     setRows((current) =>
@@ -552,6 +574,29 @@ function InvoiceEditDialog({
     );
   }
 
+  function updateCarryoverRow(
+    rowId: string,
+    key: keyof Omit<FuelCarryoverFormRow, "id" | "sourceInvoiceId" | "sourceInvoiceNo">,
+    value: string,
+  ) {
+    setCarryoverRows((current) =>
+      current.map((row) =>
+        row.id === rowId ? { ...row, [key]: value } : row,
+      ),
+    );
+  }
+
+  function addCarryoverRow() {
+    setCarryoverRows((current) => [
+      ...current,
+      createFuelCarryoverRow(current.length),
+    ]);
+  }
+
+  function removeCarryoverRow(rowId: string) {
+    setCarryoverRows((current) => current.filter((row) => row.id !== rowId));
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const ok = await onUpdateInvoice(new FormData(event.currentTarget));
@@ -559,7 +604,7 @@ function InvoiceEditDialog({
   }
 
   return (
-    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-5xl">
       <DialogHeader>
         <DialogTitle>แก้ไขใบแจ้งหนี้ {invoice.invoiceNo}</DialogTitle>
         <DialogDescription>แก้ผู้ถูกเรียกเก็บ รายการ ยอด และวันครบกำหนด</DialogDescription>
@@ -567,6 +612,7 @@ function InvoiceEditDialog({
       <form onSubmit={handleSubmit} className="grid gap-4">
         <input type="hidden" name="invoiceId" value={invoice.id} />
         <input type="hidden" name="itemsJson" value={itemsJson} />
+        <input type="hidden" name="carryoversJson" value={carryoversJson} />
         <div className="grid gap-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid min-w-0 gap-2">
@@ -731,6 +777,52 @@ function InvoiceEditDialog({
             <span className="font-mono text-foreground">{formatCurrency(subtotal)}</span>
           </div>
         </div>
+
+        {invoice.type === "fuel_transport" || invoice.carryovers.length ? (
+          <div className="grid gap-3 rounded-md border border-border p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <Label>ยอดค้างเก่า</Label>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  แก้ไขหรือลบยอดจากเดือนก่อนที่ติดมากับใบนี้ได้
+                </p>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={addCarryoverRow}>
+                <Plus className="size-4" />
+                เพิ่มยอดค้าง
+              </Button>
+            </div>
+            <div className="grid max-w-xs gap-2">
+              <Label>การคิดยอดค้าง</Label>
+              <Select value={carryoverMode} onValueChange={(value) => setCarryoverMode(value as "include" | "display")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="include">รวมในยอดต้องจ่าย</SelectItem>
+                  <SelectItem value="display">แสดงแยกไว้เฉย ๆ</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {carryoverRows.length ? (
+              <div className="grid gap-2">
+                {carryoverRows.map((row, index) => (
+                  <div key={row.id} className="grid gap-2 rounded-md border border-border/80 p-2 lg:grid-cols-[minmax(0,1fr)_9rem_7rem_7rem_7rem_2.5rem]">
+                    <Input value={row.label} placeholder={`ยอดค้าง ${index + 1}`} onChange={(event) => updateCarryoverRow(row.id, "label", event.target.value)} />
+                    <Input value={row.periodLabel} placeholder="เดือน" onChange={(event) => updateCarryoverRow(row.id, "periodLabel", event.target.value)} />
+                    <Input type="number" min="0" step="1" value={row.quantity} placeholder="ลิตร" onChange={(event) => updateCarryoverRow(row.id, "quantity", event.target.value)} />
+                    <Input type="number" min="0" step="0.01" value={row.unitPrice} placeholder="บาท/ลิตร" onChange={(event) => updateCarryoverRow(row.id, "unitPrice", event.target.value)} />
+                    <Input type="number" min="0" step="0.01" value={row.amount} placeholder="ยอดเงิน" onChange={(event) => updateCarryoverRow(row.id, "amount", event.target.value)} />
+                    <Button type="button" variant="ghost" size="icon" className="size-9 text-destructive" onClick={() => removeCarryoverRow(row.id)}>
+                      <Trash2 className="size-4" />
+                      <span className="sr-only">ลบยอดค้าง</span>
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">ไม่มียอดค้างเก่าในใบนี้</p>
+            )}
+          </div>
+        ) : null}
 
         <div className="grid gap-2">
           <Label htmlFor={`editInvoiceNotes-${invoice.id}`}>หมายเหตุ</Label>

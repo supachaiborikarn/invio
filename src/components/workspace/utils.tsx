@@ -132,14 +132,21 @@ export type InvoiceEditFormRow = {
   quantity: string;
   unitPrice: string;
   meterReadingId?: string;
+  serviceDate?: string;
+  tripLabel?: string;
+  displayOrder?: number;
 };
 
 export type InvoiceEditPayloadItem = {
+  itemId?: string;
   type: InvoiceType;
   description: string;
   quantity: number;
   unitPrice: number;
   meterReadingId?: string;
+  serviceDate?: string;
+  tripLabel?: string;
+  displayOrder?: number;
 };
 
 export const editableInvoiceTypes: InvoiceType[] = [
@@ -317,6 +324,9 @@ export function createInvoiceEditRow(item?: InvoiceItem): InvoiceEditFormRow {
     quantity: String(item?.quantity ?? 1),
     unitPrice: String(item?.unitPrice ?? 0),
     meterReadingId: item?.meterReadingId,
+    serviceDate: item?.serviceDate,
+    tripLabel: item?.tripLabel,
+    displayOrder: item?.displayOrder,
   };
 }
 
@@ -324,11 +334,15 @@ export function normalizeInvoiceEditRows(
   rows: InvoiceEditFormRow[],
 ): InvoiceEditPayloadItem[] {
   return rows.map((row) => ({
+    itemId: row.itemId,
     type: row.type,
     description: row.description.trim(),
     quantity: Math.max(Math.round(Number(row.quantity) || 1), 1),
     unitPrice: Number(String(row.unitPrice).replace(/,/g, "")) || 0,
     meterReadingId: row.meterReadingId,
+    serviceDate: row.serviceDate,
+    tripLabel: row.tripLabel,
+    displayOrder: row.displayOrder,
   }));
 }
 
